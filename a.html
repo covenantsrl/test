@@ -28,8 +28,10 @@
 		$(document).ready(()=>{
 			setTimeout(()=>{
 			var pos = localStorage.getItem('pos');
-			if (pos)
+			if (pos){
+				console.log(pos);
 				$(window).scrollTop(pos);
+			}
 			flag = true;
 			}, 1000);
 		});
