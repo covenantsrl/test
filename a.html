@@ -38,6 +38,7 @@
 				console.log(e1);
 				var e = e1.originalEvent;
 				$('.over').offset({top:window.scrollY+e.pageY-window.scrollY, left:window.scrollX+e.pageX-window.scrollX});
+				console.log( e.pageX-window.scrollX, e.pageY-window.scrollY);
 				var word = getWordAtPoint(e.target, e.pageX-window.scrollX, e.pageY-window.scrollY);
 				console.log(word);
 				//go_word(word);
@@ -122,6 +123,7 @@
 			if (!m) alert('error');
 			let pos = m.index;
 			let {x, y} = getPointAtPos($('.a pre')[0], pos);
+			console.log(x, y);
 			$('.over').offset({top:window.scrollY+y, left:window.scrollX+x});
 			$(window).scrollTop(y);
 		}
