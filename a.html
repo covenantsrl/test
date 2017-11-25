@@ -38,8 +38,8 @@
 				console.log(e1);
 				var e = e1.originalEvent;
 				$('.over').offset({top:window.scrollY+e.pageY-window.scrollY, left:window.scrollX+e.pageX-window.scrollX});
-				//var word = getWordAtPoint(e.target, e.pageX, e.pageY-window.scrollY);
-				//console.log(word);
+				var word = getWordAtPoint(e.target, e.pageX-window.scrollX, e.pageY-window.scrollY);
+				console.log(word);
 				//go_word(word);
 				//flag = false;
 			});
