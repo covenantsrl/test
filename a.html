@@ -24,6 +24,14 @@
 		background-color: black;
 		opacity: 0.3;
 	}
+	.endsearch {
+		position: fixed;
+		width: 50px;
+		height: 15px;
+		right: 0px;
+		background-color: black;
+		opacity: 0.3;
+	}
 	</style>
 
 	<script>
@@ -38,9 +46,25 @@
 				var e = e1.originalEvent;
 				//var word = getWordAtPoint(e.target, e.pageX-window.scrollX, e.pageY-window.scrollY);
 				var word = getWordAtPoint(e.target, e.x, e.y);
+
 				console.log(word);
-				go_word(word);
-				//flag = false;
+				flag = false;
+				$('.endsearch').css({'background-color': 'red'});
+				cur_word = word;
+				go_word();
+			});
+
+			$('.over').click(()=>{
+				go_word();
+			});
+			$('.endsearch').click(()=>{
+				cur_word = null;
+				cur_offset = 1;
+				var pos = localStorage.getItem('pos');
+				$(window).scrollTop(pos);
+				$('.over').offset({top:0, left:0});
+				$('.endsearch').css({'background-color': 'black'});
+				flag = true;
 			});
 
 			setTimeout(()=>{
@@ -102,12 +126,12 @@
 			}
 		}
 
-		var cur_offset = 0;
-		var cur_word
-		function go_word(word){
+		var cur_offset = 1;
+		var cur_word;
+		function go_word(){
 			let s = $('.a pre').html().toLowerCase();
-			let w = word.toLowerCase();
-			let re = new RegExp(w, 'g');
+			let w = cur_word.toLowerCase();
+			let re = new RegExp(w+'\\b', 'g');
 			let m = null;
 			let i = 0;
 			while ((m = re.exec(s)) != null){
@@ -118,7 +142,10 @@
 				cur_offset++;
 				break;
 			}
-			if (!m) alert('error');
+			if (!m) {
+				$('.endsearch').click();
+				return;
+			};
 			let pos = m.index;
 			let {x, y} = getPointAtPos($('.a pre')[0], pos);
 			$('.over').offset({top:window.scrollY+y, left:window.scrollX+x});
@@ -129,6 +156,7 @@
 </head>
 <body>
 	<div class="over"></div>
+	<div class="endsearch"></div>
 	<div class="a">
 		<div class="b">
 			<pre>
