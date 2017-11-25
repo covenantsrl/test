@@ -1,0 +1,123 @@
+<html>
+<head>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+	<style>
+	.a {
+		width: 100%;
+		display: flex;
+		flex-direction: row;
+	}
+	.b {
+		width: 50%;
+	}
+	.c {
+		width: 50%;
+	}
+	pre {
+		white-space: pre-wrap;
+	}
+	</style>
+
+	<script>
+		var flag = false;
+		$(window).scroll( () => {
+			if (flag)
+				localStorage.setItem('pos', $(window).scrollTop());
+		});
+		$(document).ready(()=>{
+			setTimeout(()=>{
+			var pos = localStorage.getItem('pos');
+			if (pos)
+				$(window).scrollTop(pos);
+			flag = true;
+			}, 1000);
+		});
+function getWordAtPoint(elem, x, y) {
+  if(elem.nodeType == elem.TEXT_NODE) {
+    var range = elem.ownerDocument.createRange();
+    range.selectNodeContents(elem);
+    var currentPos = 0;
+    var endPos = range.endOffset;
+    while(currentPos+1 < endPos) {
+      range.setStart(elem, currentPos);
+      range.setEnd(elem, currentPos+1);
+      if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
+         range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
+        range.expand("word");
+        var ret = range.toString();
+        range.detach();
+        return(ret);
+      }
+      currentPos += 1;
+    }
+  } else {
+    for(var i = 0; i < elem.childNodes.length; i++) {
+      var range = elem.childNodes[i].ownerDocument.createRange();
+      range.selectNodeContents(elem.childNodes[i]);
+      if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
+         range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
+        range.detach();
+        return(getWordAtPoint(elem.childNodes[i], x, y));
+      } else {
+        range.detach();
+      }
+    }
+  }
+  return(null);
+}    
+$(document).click((e1)=>{
+	var e = e1.originalEvent;
+	var word = getWordAtPoint(e.target, e.x, e.y);
+	//flag = false;
+	window.find(word, false, false, true, false, false);
+	window.find(word, false, false, true, false, false);
+});
+	</script>
+</head>
+<body>
+	<div class="a">
+		<div class="b">
+			<pre>
+			Gregorii præfatio prima incipit.
+
+Decedente atque immo potius pereunte ab urbibus Gallicanis liberalium cultura litterarum, cum nonnullae res gererentur vel rectae vel inprobae, ac feretas gentium desaeviret, regum furor acueretur, eclesiae inpugnarentur ab hereticis, a catholicis tegerentur, ferveret Christi fides in plurimis, tepisceret in nonnullis, ipsae quoque eclesiae vel ditarentur a devotis vel nudarentur a perfides, nec repperire possit quisquam peritus dialectica in arte grammaticus, qui haec aut stilo prosaico aut metrico depingeret versu: ingemescebant saepius plerique, dicentes: 'Vae diebus nostris, quia periit studium litterarum a nobis, nec reperitur rethor in populis, qui gesta praesentia promulgare possit in paginis'. Ista etenim atque et his similia iugiter intuens dici, pro commemoratione praeteritorum, ut notitiam adtingerint venientum, etsi incultu effatu, nequivi tamen obtegere vel certamena flagitiosorum vel vitam recte viventium; et praesertim his inlicitus stimulis, quod a nostris fari plerumque miratus sum, quia: 'Philosophantem rethorem intellegunt pauci, loquentem rusticum multi'. Libuit etiam animo, ut pro suppotatione annorum ab ipso mundi principio libri primi poniretur initium, cuius capitula deursum subieci.
+
+
+Liber primus
+
+Scripturus bella regum cum gentibus adversis, martyrum cum paganis, eclesiarum cum hereticis, prius fidem meam proferre cupio, ut qui ligirit me non dubitet esse catholicum. Illud etiam placuit propter eos, qui adpropinquantem finem mundi disperant, ut, collectam per chronicas vel historias anteriorum annorum summam, explanitur aperte, quanti ab exordio mundi sint anni. Sed prius veniam legentibus praecor, si aut in litteris aut in sillabis grammaticam artem excessero, de qua adplene non sum inbutus; illud tantum studens, ut quod in eclesia credi praedicatur sine aliquo fuco aut cordis hesitatione reteneam, quia scio, peccatis obnoxium per credulitatem puram obtenire posse veniam apud Deum. 
+
+
+
+
+Credo ergo in Deum patrem omnipotentem. Credo in Iesum Christum, filium eius unicum, dominum nostrum, natum a patre, non factum, non post tempora, sed ante cunctum tempus semper fuisse cum patre. Nec enim pater dici potuerat, nisi haberit filium; neque filius esset, si patrem utique non haberet. Illos vero, qui dicunt: 'Erat quando non erat', execrabiliter rennuo et ab eclesia segregare contestor. Credo Christum hunc verbum esse patris, per quem facta sunt omnia. Hunc verbum carne factum credo, cuius passionem mundus redemptus est, et humanitatem, non deitatem subiacuisse passione, credo. Credo, eum tertia die resurrexisse, hominem perditum liberasse, ascendisse caelos, sedere a dexteram Patris, venturum ac iudicaturum vivos et mortuos. Credo sanctum Spiritum a Patre et Filio processisse, non minorem et quasi ante non esset, sed aequalem et semper cum Patre et Filio coaeternum deum, cumsubstantialem natura, aequalem omnipotentia, consempiternum esse essentia et nunquam sine Patre fuisse vel Filio, neque minorem Patri vel Filio. Credo hanc Trinitatem sanctam in distinctione subsistere personarum, et aliam quidem personam Patris, aliam Fili, aliam Spiritus sancti. In qua Trinitate unam Deitatem, unam potentiam, unam essentiam esse, confiteor. Credo beatam Mariam, ut virginem ante partum, ita virginem et post partum. Credo animam inmortalem, nec tamen partem habere Deitatis. Et omnia quae a 318 episcopis Nicaene instituta sunt credo fideliter. De fine vero mundi ea sentio quae a prioribus didici, Antechristum prius esse venturo. Antechristus vero primum circumcisionem inducit, se asserens Christum, deinde in templo Hierusolimis statuam suam collocat adorandam, sicut Dominum dixisse legimus: Videbitis abhuminationem desolationes stantem in loco sancto. Sed diem illam omnibus hominibus oculi ipse Dominus manifestat, dicens: De die autem illa et ora nemo scit, neque angeli caelorum neque filius, nisi Pater solos. Sed et hic respondibimus hereticis, qui nos inpugnant, asserentis, minorem esse Filium Patri, qui hanc diem ignoret. Cognoscant ergo, hunc filium christianum populum nuncopatum, de quo a Deo praedicetur: Ego ero illis in patre, et ipsi erunt mihi in filios. Si enim haec de unigenito Filio praedixisset, nunquam ei angelos praeposuisset. Sic enim ait: Neque angeli caelorum neque filios; ostendens non de unigenito, sed de adoptivo populo haec dixisse. Noster vero finis ipse Christus est, qui nobis vitam aeternam, si ad eum conversi fuerimus, larga benignitate praestabit. 
+
+
+
+
+
+
+
+
+De subpotatione vero huius mundi evidenter chronicae Eusebii Caesariensis episcopi ac Hieronimi presbiteri prolocuntur et rationem de omni annorum serie pandunt. Nam et Horosius diligentissime haec inquaerens, omnem numerum annorum ab initio mundi usque ad suum tempus in unum colligit. Hoc etiam et Victurius cum ordine paschalis solemnitates inquirere fecit. Ergo et nos scriptorum supra memoratorum exsemplaria sequentes, cupimus a primi homines conditione, si Dominus dignabitur suum commodare auxilium, usque ad nostrum tempos cunctam annorum congeriem conpotare. Quod facilius adinplemus, si ab ipso Adam sumamus exordium.
+			</pre>
+
+		</div>
+		<div class="c">
+			<pre>
+			HERE BEGINS GREGORY'S FIRST PREFACE
+With liberal culture on the wane, or rather perishing in the Gallic cities there were many deeds being done both good and evil: the heathen were raging fiercely; kings were growing more cruel; the church. attacked by heretics, was defended by Catholics; while the Christian faith was in general devoutly cherished, among some it was growing cold; the churches also were enriched by the faithful or plundered by traitors-and no grammarian skilled in the dialectic art could be found to describe these matters either in prose or verse; and many were lamenting and saying: "Woe to our day, since the pursuit of letters has perished from among us and no one can be found among the people who can set forth the deeds of the present on the written page." Hearing continually these complaints and others like them I [have undertaken] to commemorate the past, order that it may come to the knowledge of the future; and although my speech is rude, I have been unable to be silent as to the struggles between the wicked and the upright; and I have been especially ­ encouraged because, to my surprise, it has often been said by men of our day, that few understand the learned words of the rhetorician but many the rude language of the common people. I have decided also that for the reckoning of the years the first book shall begin with the very beginning of the world, and I have given its chapters below.
+
+I
+
+As I am about to describe the struggles of kings with the heathen enemy, of martyrs with pagans, of churches with heretics, I desire first of all to declare my faith so that my reader may have no doubt that I am Catholic. I have also decided, on account of those who are losing hope of the approaching end of the world, to collect the total of past years from chronicles and histories and set forth clearly how many years there are from the beginning of the world. But I first beg pardon of my readers if either in letter or in syllable I transgress the rules of the grammatic art in which I have not been fully instructed, since I have been eager only for this, to hold fast, without any subterfuge or irresolution of heart, to that which we are bidden in the church to believe, because I know that he who is liable to punishment for his sin can obtain pardon from God by untainted faith.
+
+I believe, then, in God the Father omnipotent. I believe in Jesus Christ his only Son, our Lord God, born of the Father, not created. [I believe] that he has always been with the Father, not only since time began but before all time. For the Father could not have been so named unless he had a son; and there could be no son without a father. But as for those who say: "There was a time when he was not," [note: A leading belief of Arian Christology.] I reject them with curses, and call men to witness that they are separated from the church. I believe that the word of the Father by which all things were made was Christ. I believe that this word was made fresh and by its suffering the world was redeemed, and I believe that humanity, not deity, was subject to the suffering. I believe that he rose again on the third day, that he freed sinful man, that he ascended to heaven, that he sits on the right hand of the Father, that he will come to judge the living and the dead. I believe that the holy Spirit proceeded from the Father and the Son, that it is not inferior and is not of later origin, but is God, equal and always co­eternal with the Father and the Son, consubstantial in its nature, equal in omnipotence, equally eternal in its essence, and that it has never existed apart from the Father and the Son and is not inferior to the Father and the Son. I believe that this holy Trinity exists with separation of persons, and one person is that of the Father, another that the Son, another that of the Holy Spirit. And in this Trinity confess that there is one Deity, one power, one essence. I believe that the blessed Mary was a virgin after the birth as she was a virgin before. I believe that the soul is immortal but that nevertheless it has no part in deity. And I faithfully believe all things that were established at Nicæa by the three hundred and eighteen bishops. But as to the end of the world I hold beliefs which I learned from our forefathers, that Antichrist will come first. An Antichrist will first propose circumcision, asserting that he is Christ; next he will place his statue in the temple at Jerusalem to be worshipped, just as we read that the Lord said: "You shall see the abomination of desolation standing in the holy place." But the Lord himself declared that that day is hidden from all men, saying; "But of that day and that hour knoweth no one not even the anger in heaven, neither the Son, but the Father alone." Moreover we shall here make answer to the heretics [note: the Arians] who attack us, asserting that the Son is inferior to the Father since he is ignorant of this day. Let them learn then that Son here is the name applied to the Christian people, of whom God says: "I shall be to them a father and they shall be to me for sons." For if he had spoken these words of the only­begotten Son he would never have given the angels first place. For he uses these words: "Not even the angels in heaven nor the Son," showing that he spoke these words not of the only-begotten but of the people of adoption. But our end is Christ himself, who will graciously bestow eternal life on us if we turn to him.
+
+As to the reckoning of this world, the chronicles of Eusebius bishop of Cæsarea, and of Jerome the priest, speak clearly, an they reveal the plan of the whole succession of years. Orosius too, searching into these matters very carefully, collects the whole number of years from the beginning of the world down to his own time. Victor also examined into this in connection with the time of the Easter festival. And so we follow the works of the writers mentioned above and desire to reckon the complete series of years from the creation of the first man down to our own time, if the Lord shall deign to lend his aid. And this we shall more easily accomplish if we begin with Adam himself.
+			</pre>
+		</div>
+	</div>
+</body>
+</html>
