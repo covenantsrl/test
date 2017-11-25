@@ -33,6 +33,17 @@
 				localStorage.setItem('pos', $(window).scrollTop());
 		});
 		$(document).ready(()=>{
+			//$(document).click((e1)=>{
+			$(document).on('touchstart click', function(e1){
+				console.log("A");
+				var e = e1.originalEvent;
+				var word = getWordAtPoint(e.target, e.x, e.y);
+				console.log(word);
+				go_word(word);
+				//flag = false;
+				//window.find(word, false, false, true, false, false);
+			});
+
 			setTimeout(()=>{
 			var pos = localStorage.getItem('pos');
 			if (pos){
@@ -115,15 +126,6 @@
 			$(window).scrollTop(y);
 		}
 
-		//$(document).click((e1)=>{
-		$(document).on('touchstart click', function(e1){
-			var e = e1.originalEvent;
-			var word = getWordAtPoint(e.target, e.x, e.y);
-			console.log(word);
-			go_word(word);
-			//flag = false;
-			//window.find(word, false, false, true, false, false);
-		});
 	</script>
 </head>
 <body>
