@@ -34,7 +34,7 @@
 		});
 		$(document).ready(()=>{
 			//$(document).click((e1)=>{
-			$('.b').on('touchstart click', function(e1){
+			$('.b').on('click', function(e1){
 				var e = e1.originalEvent;
 				var word = getWordAtPoint(e.target, e.pageX-window.scrollX, e.pageY-window.scrollY);
 				console.log(word);
