@@ -37,7 +37,7 @@
 			$(document).on('touchstart click', function(e1){
 				console.log(e1);
 				var e = e1.originalEvent;
-				var word = getWordAtPoint(e.target, e.x, e.y);
+				var word = getWordAtPoint(e.target, e.clientX, e.clientY);
 				console.log(word);
 				go_word(word);
 				//flag = false;
