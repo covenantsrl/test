@@ -37,11 +37,11 @@
 			$(document).on('touchstart click', function(e1){
 				console.log(e1);
 				var e = e1.originalEvent;
-				var word = getWordAtPoint(e.target, e.pageX, e.pageY-window.scrollY);
-				console.log(word);
-				go_word(word);
+				$('.over').offset({top:window.scrollY+e.pageY-window.scrollY, left:window.scrollX+e.pageX-window.scrollX});
+				//var word = getWordAtPoint(e.target, e.pageX, e.pageY-window.scrollY);
+				//console.log(word);
+				//go_word(word);
 				//flag = false;
-				//window.find(word, false, false, true, false, false);
 			});
 
 			setTimeout(()=>{
