@@ -17,6 +17,13 @@
 	pre {
 		white-space: pre-wrap;
 	}
+	.over {
+		position: absolute;
+		width: 50px;
+		height: 15px;
+		background-color: black;
+		opacity: 0.3;
+	}
 	</style>
 
 	<script>
@@ -35,50 +42,91 @@
 			flag = true;
 			}, 1000);
 		});
-function getWordAtPoint(elem, x, y) {
-  if(elem.nodeType == elem.TEXT_NODE) {
-    var range = elem.ownerDocument.createRange();
-    range.selectNodeContents(elem);
-    var currentPos = 0;
-    var endPos = range.endOffset;
-    while(currentPos+1 < endPos) {
-      range.setStart(elem, currentPos);
-      range.setEnd(elem, currentPos+1);
-      if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
-         range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
-        range.expand("word");
-        var ret = range.toString();
-        range.detach();
-        return(ret);
-      }
-      currentPos += 1;
-    }
-  } else {
-    for(var i = 0; i < elem.childNodes.length; i++) {
-      var range = elem.childNodes[i].ownerDocument.createRange();
-      range.selectNodeContents(elem.childNodes[i]);
-      if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
-         range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
-        range.detach();
-        return(getWordAtPoint(elem.childNodes[i], x, y));
-      } else {
-        range.detach();
-      }
-    }
-  }
-  return(null);
-}    
-$(document).click((e1)=>{
-	var e = e1.originalEvent;
-	var word = getWordAtPoint(e.target, e.x, e.y);
-	console.log(word);
-	//flag = false;
-	window.find(word, false, false, true, false, false);
-	window.find(word, false, false, true, false, false);
-});
+
+		function getWordAtPoint(elem, x, y) {
+			if(elem.nodeType == elem.TEXT_NODE) {
+				var range = elem.ownerDocument.createRange();
+				range.selectNodeContents(elem);
+				var currentPos = 0;
+				var endPos = range.endOffset;
+				while(currentPos+1 < endPos) {
+					range.setStart(elem, currentPos);
+					range.setEnd(elem, currentPos+1);
+					if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
+						range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
+						range.expand("word");
+						var ret = range.toString();
+						range.detach();
+						return(ret);
+					}
+					currentPos += 1;
+				}
+			} else {
+				for(var i = 0; i < elem.childNodes.length; i++) {
+					var range = elem.childNodes[i].ownerDocument.createRange();
+					range.selectNodeContents(elem.childNodes[i]);
+					if(range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right  >= x &&
+						range.getBoundingClientRect().top  <= y && range.getBoundingClientRect().bottom >= y) {
+						range.detach();
+						return(getWordAtPoint(elem.childNodes[i], x, y));
+					} else {
+						range.detach();
+					}
+				}
+			}
+			return(null);
+		}    
+		function getPointAtPos(elem, pos){
+			if(elem.nodeType == elem.TEXT_NODE) {
+				var range = elem.ownerDocument.createRange();
+				range.selectNodeContents(elem);
+				range.setStart(elem, pos);
+				range.setEnd(elem, pos+1);
+				range.expand("word");
+				//console.log(range.toString(), range.getBoundingClientRect());
+				let ret = { x: range.getBoundingClientRect().x, y: range.getBoundingClientRect().y};;
+				range.detach();
+				return ret;
+			} else {
+				return getPointAtPos(elem.childNodes[0], pos);
+			}
+		}
+
+		var cur_offset = 0;
+		var cur_word
+		function go_word(word){
+			let s = $('.a pre').html().toLowerCase();
+			let w = word.toLowerCase();
+			let re = new RegExp(w, 'g');
+			let m = null;
+			let i = 0;
+			while ((m = re.exec(s)) != null){
+				if (i<cur_offset){
+					i++;
+					continue;
+				}
+				cur_offset++;
+				break;
+			}
+			if (!m) alert('error');
+			let pos = m.index;
+			let {x, y} = getPointAtPos($('.a pre')[0], pos);
+			$('.over').offset({top:window.scrollY+y, left:window.scrollX+x});
+			$(window).scrollTop(y);
+		}
+
+		$(document).click((e1)=>{
+			var e = e1.originalEvent;
+			var word = getWordAtPoint(e.target, e.x, e.y);
+			console.log(word);
+			go_word(word);
+			//flag = false;
+			//window.find(word, false, false, true, false, false);
+		});
 	</script>
 </head>
 <body>
+	<div class="over"></div>
 	<div class="a">
 		<div class="b">
 			<pre>
