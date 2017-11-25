@@ -69,6 +69,7 @@ function getWordAtPoint(elem, x, y) {
 $(document).click((e1)=>{
 	var e = e1.originalEvent;
 	var word = getWordAtPoint(e.target, e.x, e.y);
+	console.log(word);
 	//flag = false;
 	window.find(word, false, false, true, false, false);
 	window.find(word, false, false, true, false, false);
