@@ -35,13 +35,73 @@
 	}
 	</style>
 
+<style>
+/*@media screen and (min-width: 769px) {
+	.scroller {
+		width: 90%;
+	}
+	.touchcontrol {
+		display: none;
+	}
+	.touchcontroltop {
+		display: none;
+	}
+	.touchcontrolleft {
+		display: none;
+	}
+	.touchcontrolmin {
+		display: none;
+	}
+}
+@media screen and (max-width: 768px) {*/
+	.touchcontrol {
+		bottom: 120;
+		right: 20;
+		position: fixed;
+		background-color: rgba(0,0,0,0);
+		height: 200px;
+		width: 300px;
+	}
+	.touchcontroltop {
+		bottom: 320;
+		right: 20;
+		position: fixed;
+		background-color: #cccccc;
+		height: 100px;
+		width: 200px;
+	}
+	.touchcontrolleft {
+		bottom: 120;
+		right: 320;
+		position: fixed;
+		background-color: #cccccc;
+		height: 130px;
+		width: 100px;
+	}
+	.touchcontrolmin {
+		bottom: 140;
+		right:140;
+		position: fixed;
+		background-color: #cccccc;
+		height: 40px;
+		width: 100px;
+	}
+/*}*/
+.hidden {
+	display: none !important;
+}
+</style>
+
 	<script>
+		
 		var flag = false;
 		$(window).scroll( () => {
 			if (flag)
 				localStorage.setItem('pos', $(window).scrollTop());
 		});
 		$(document).ready(()=>{
+			//build_ui_touch();
+
 			//$(document).click((e1)=>{
 			$('.b').on('click', function(e1){
 				var e = e1.originalEvent;
@@ -61,6 +121,7 @@
 			$('.endsearch').click(()=>{
 				cur_word = null;
 				cur_offset = 1;
+				whole_match = true;
 				var pos = localStorage.getItem('pos');
 				$(window).scrollTop(pos);
 				$('.over').offset({top:0, left:0});
@@ -73,6 +134,8 @@
 			if (pos){
 				console.log(pos);
 				$(window).scrollTop(pos);
+				
+				align();
 			}
 			flag = true;
 			}, 1000);
@@ -129,10 +192,13 @@
 
 		var cur_offset = 1;
 		var cur_word;
+		var whole_match = true;
 		function go_word(){
 			let s = $('.a pre').html().toLowerCase();
 			let w = cur_word.toLowerCase();
-			let re = new RegExp(w+'\\b', 'g');
+			if (whole_match)
+				w = '\\b'+w+'\\b';
+			let re = new RegExp(w, 'g');
 			let m = null;
 			let i = 0;
 			while ((m = re.exec(s)) != null){
@@ -144,20 +210,198 @@
 				break;
 			}
 			if (!m) {
+				if (cur_offset === 1 && cur_word.length > 3){
+					cur_word = cur_word.substr(0, cur_word.length-1);
+					whole_match = false;
+					go_word();
+					return;
+				}
 				$('.endsearch').click();
 				return;
 			};
 			let pos = m.index;
 			let {x, y} = getPointAtPos($('.a pre')[0], pos);
 			$('.over').offset({top:window.scrollY+y, left:window.scrollX+x});
-			$(window).scrollTop(y);
+			$(window).scrollTop(y+window.scrollY);
 		}
+		
+		function align(){
+			while (true){
+
+				let pos = $('.b pre').html().indexOf('---');
+				if (pos === -1)
+					break;
+				let {x, y} = getPointAtPos($('.b pre')[0], pos);
+
+				let pos1 = $('.c pre').html().indexOf('---');
+				if (pos1 === -1)
+					break;
+				let {x:x1, y:y1} = getPointAtPos($('.c pre')[0], pos1);
+
+				if (y == y1){
+					$('.b pre').html($('.b pre').html().replace('---', ''));
+					$('.c pre').html($('.c pre').html().replace('---', ''));
+				} else if (y < y1){
+					$('.b pre').html($('.b pre').html().replace('---', '\n---'));
+				} else if (y > y1){
+					$('.c pre').html($('.c pre').html().replace('---', '\n---'));
+				}
+			}
+			alert('done');
+		}
+
+
+		// touchcontrol
+		let touchcontrol_stack = [];
+		function touchcontrol(config){
+
+			function position(i, rows, cols){
+				let position;
+				const row = parseInt(i/cols) % rows;
+				const col = i % cols;
+				
+				if (row == 0)
+					position = 'top:10;';
+				else if (row == 1)
+					position = rows == 2 ? 'top:60;' : 'top:70;';
+				else if (row == 2)
+					position = 'top:130;';
+				
+				if (col == 0)
+					position += '';
+				else if (col == 1)
+					position += 'left:100;';
+				else if (col == 2)
+					position += 'right:10;';
+
+				return position;
+			}
+			function button(i, name, rows, cols, offset){
+				let b = `<div id="${'touchbutton_'+i}" style="background-color:#bbbbbb;width:80;height:40;position:absolute;${position(i-offset, rows, cols)}">${name}</div>`;
+				return b;
+			
+			}
+			function button_click(m, i){
+				let fn;
+				if (m[i].mode)
+					fn = ()=>{mode(config[m[i].mode]);};
+				else if (m[i].exit){
+					if (touchcontrol_stack.length < 2){
+						fn = () => {
+							$('.touchcontrol').addClass('hidden');
+							$('.touchcontroltop').addClass('hidden');
+							$('.touchcontrolleft').addClass('hidden');
+							$('.touchcontrolmin').removeClass('hidden')
+						};
+					} else {
+						let prev = touchcontrol_stack[touchcontrol_stack.length-2];
+						fn = ()=>{
+							$('.touchcontroltop').addClass('hidden');
+							$('.touchcontrolleft').addClass('hidden');
+							touchcontrol_stack.pop();touchcontrol_stack.pop();mode(prev);
+						};
+					}
+				} else
+					fn = m[i].click;
+
+				$('#touchbutton_'+i).click(fn);
+			}
+			function mode(m){
+				touchcontrol_stack.push(m);
+
+				let html = '';
+				for (let i=0; i < Math.min(9,m.length); i++){
+					if (m[i].name)
+						html += button(i, m[i].name, 3, 3, 0);
+				}
+				$('.touchcontrol').html(html);
+
+				for (let i=0; i < Math.min(9,m.length); i++){
+					button_click(m, i);
+				}
+
+
+				// top
+				if (m.length > 9){
+					$('.touchcontroltop').removeClass('hidden');
+				}
+				
+				html = '';
+				for (let i=9; i < Math.min(13,m.length); i++){
+					if (m[i].name)
+						html += button(i, m[i].name, 2, 2, 9);
+				}
+				$('.touchcontroltop').html(html);
+				
+				for (let i=9; i < Math.min(13,m.length); i++){
+					button_click(m, i);
+				}
+				
+
+				// left
+				if (m.length > 13){
+					$('.touchcontrolleft').removeClass('hidden');
+				}
+				
+				html = '';
+				for (let i=13; i < Math.min(15,m.length); i++){
+					if (m[i].name)
+						html += button(i, m[i].name, 2, 1, 13);
+				}
+				$('.touchcontrolleft').html(html);
+				
+				for (let i=13; i < Math.min(15,m.length); i++){
+					button_click(m, i);
+				}
+			}
+
+			mode(config['root']);
+
+			$('.touchcontrolmin').click(()=>{
+				$('.touchcontrol').removeClass('hidden');
+				//$('.touchcontroltop').removeClass('hidden');
+				//$('.touchcontrolleft').removeClass('hidden');
+				$('.touchcontrolmin').addClass('hidden')
+			});
+		}
+
+		function build_ui_touch() {
+			touchcontrol(
+				{
+					root: [
+						{name:'',click:()=>{
+						}},
+						{name:'',click:()=>{
+						}},
+						{name:'X',exit:true},
+						{name:'',click:()=>{
+						}},
+						{name:'bar',click:()=>{
+							toggle_bar();
+						}},
+						{name:'',click:()=>{
+						}},
+						{name:'',click:()=>{
+						}},
+						{name:'',click:()=>{
+						}},
+					],
+				}
+			);
+		}
+		//
+
 
 	</script>
 </head>
 <body>
 	<div class="over"></div>
 	<div class="endsearch"></div>
+	<div class="touchcontrol"></div>
+	<div class="touchcontroltop hidden"></div>
+	<div class="touchcontrolleft hidden"></div>
+	<div class="touchcontrolmin hidden"></div>
+
 	<div class="a">
 		<div class="b">
 			<pre>
@@ -165,87 +409,57 @@
 
 Decedente atque immo potius pereunte ab urbibus Gallicanis liberalium cultura litterarum, cum nonnullae res gererentur vel rectae vel inprobae, ac feretas gentium desaeviret, regum furor acueretur, eclesiae inpugnarentur ab hereticis, a catholicis tegerentur, ferveret Christi fides in plurimis, tepisceret in nonnullis, ipsae quoque eclesiae vel ditarentur a devotis vel nudarentur a perfides, nec repperire possit quisquam peritus dialectica in arte grammaticus, qui haec aut stilo prosaico aut metrico depingeret versu: ingemescebant saepius plerique, dicentes: 'Vae diebus nostris, quia periit studium litterarum a nobis, nec reperitur rethor in populis, qui gesta praesentia promulgare possit in paginis'. Ista etenim atque et his similia iugiter intuens dici, pro commemoratione praeteritorum, ut notitiam adtingerint venientum, etsi incultu effatu, nequivi tamen obtegere vel certamena flagitiosorum vel vitam recte viventium; et praesertim his inlicitus stimulis, quod a nostris fari plerumque miratus sum, quia: 'Philosophantem rethorem intellegunt pauci, loquentem rusticum multi'. Libuit etiam animo, ut pro suppotatione annorum ab ipso mundi principio libri primi poniretur initium, cuius capitula deursum subieci.
 
-
-
+---
 
 Liber primus
 
 Scripturus bella regum cum gentibus adversis, martyrum cum paganis, eclesiarum cum hereticis, prius fidem meam proferre cupio, ut qui ligirit me non dubitet esse catholicum. Illud etiam placuit propter eos, qui adpropinquantem finem mundi disperant, ut, collectam per chronicas vel historias anteriorum annorum summam, explanitur aperte, quanti ab exordio mundi sint anni. Sed prius veniam legentibus praecor, si aut in litteris aut in sillabis grammaticam artem excessero, de qua adplene non sum inbutus; illud tantum studens, ut quod in eclesia credi praedicatur sine aliquo fuco aut cordis hesitatione reteneam, quia scio, peccatis obnoxium per credulitatem puram obtenire posse veniam apud Deum. 
 
-
-
-
-
+---
 
 Credo ergo in Deum patrem omnipotentem. Credo in Iesum Christum, filium eius unicum, dominum nostrum, natum a patre, non factum, non post tempora, sed ante cunctum tempus semper fuisse cum patre. Nec enim pater dici potuerat, nisi haberit filium; neque filius esset, si patrem utique non haberet. Illos vero, qui dicunt: 'Erat quando non erat', execrabiliter rennuo et ab eclesia segregare contestor. Credo Christum hunc verbum esse patris, per quem facta sunt omnia. Hunc verbum carne factum credo, cuius passionem mundus redemptus est, et humanitatem, non deitatem subiacuisse passione, credo. Credo, eum tertia die resurrexisse, hominem perditum liberasse, ascendisse caelos, sedere a dexteram Patris, venturum ac iudicaturum vivos et mortuos. Credo sanctum Spiritum a Patre et Filio processisse, non minorem et quasi ante non esset, sed aequalem et semper cum Patre et Filio coaeternum deum, cumsubstantialem natura, aequalem omnipotentia, consempiternum esse essentia et nunquam sine Patre fuisse vel Filio, neque minorem Patri vel Filio. Credo hanc Trinitatem sanctam in distinctione subsistere personarum, et aliam quidem personam Patris, aliam Fili, aliam Spiritus sancti. In qua Trinitate unam Deitatem, unam potentiam, unam essentiam esse, confiteor. Credo beatam Mariam, ut virginem ante partum, ita virginem et post partum. Credo animam inmortalem, nec tamen partem habere Deitatis. Et omnia quae a 318 episcopis Nicaene instituta sunt credo fideliter. De fine vero mundi ea sentio quae a prioribus didici, Antechristum prius esse venturo. Antechristus vero primum circumcisionem inducit, se asserens Christum, deinde in templo Hierusolimis statuam suam collocat adorandam, sicut Dominum dixisse legimus: Videbitis abhuminationem desolationes stantem in loco sancto. Sed diem illam omnibus hominibus oculi ipse Dominus manifestat, dicens: De die autem illa et ora nemo scit, neque angeli caelorum neque filius, nisi Pater solos. Sed et hic respondibimus hereticis, qui nos inpugnant, asserentis, minorem esse Filium Patri, qui hanc diem ignoret. Cognoscant ergo, hunc filium christianum populum nuncopatum, de quo a Deo praedicetur: Ego ero illis in patre, et ipsi erunt mihi in filios. Si enim haec de unigenito Filio praedixisset, nunquam ei angelos praeposuisset. Sic enim ait: Neque angeli caelorum neque filios; ostendens non de unigenito, sed de adoptivo populo haec dixisse. Noster vero finis ipse Christus est, qui nobis vitam aeternam, si ad eum conversi fuerimus, larga benignitate praestabit. 
 
-
-
-
-
-
-
-
-
-
-
+---
 
 De subpotatione vero huius mundi evidenter chronicae Eusebii Caesariensis episcopi ac Hieronimi presbiteri prolocuntur et rationem de omni annorum serie pandunt. Nam et Horosius diligentissime haec inquaerens, omnem numerum annorum ab initio mundi usque ad suum tempus in unum colligit. Hoc etiam et Victurius cum ordine paschalis solemnitates inquirere fecit. Ergo et nos scriptorum supra memoratorum exsemplaria sequentes, cupimus a primi homines conditione, si Dominus dignabitur suum commodare auxilium, usque ad nostrum tempos cunctam annorum congeriem conpotare. Quod facilius adinplemus, si ab ipso Adam sumamus exordium.
 
-
-
-
+---
 
 1. De Adam et Ewa.
 
 Principio Dominus caelum terramque in christo suo, qui est omnium principium, id est in Filio suo, furmavit, qui post creata mundi totius elementa, glebam adsumens fragilis limi, hominem ad suam imaginem similitudinemque plasmavit et insufflavit in faciem eius spiraculum vitae, et factus est in animam viventem. Cuius dormienti ablata costa, mulier Ewa creata est. Nec dubium enim est, quod hic primus homo Adam, antequam peccaret, tipum Redemptoris domini praetulisset. Ipsi enim in passionis sopore obdormiens, de latere suo dum aquam cruoremque producit, virginem inmaculatamque eclesiam sibi exhibuit, redemptam sanguine, latice emundatam, non habentem maculam aut rugam, id est limphis ablutam propter maculam, extensam in crucem propter rugam. Hi ergo primi hominis inter amoena paradisi beati viventis, anguis astu inlecti, divina praecepta transiliunt, eiectique ab angelica sede, mundi laboribus depotantur.
 
-
-
-
-
+---
 
 2. De Cain et Abel.
 
 Cognitum autem satellitem, mulier concipit peperitque duos filios. Sed dum Deus unius sacrificium dignanter suscipit, alius invidia inflammante tumiscit, et in fraterni sanguinis effusionem novus parecida consurgens, fratrem opprimit, vincit, interimit.
 
-
-
-
+---
 
 3. De Enoch iusto.
 
 Exhinc cunctum genus in facinus exsecrabile ruit praeter Enoch iustum, qui ambolans in viis Dei, ab ipso Domino propter iustitiam adsumptus, de medio peccantes populi liberatur. Sic enim legimus: Ambolavit Enoch cum Deo, et non conparuit, quia Deus tulit eum.
 
-
-
-
+---
 
 4. De diluvio.
 
 Dominus ergo commotus contra iniquitates populi, non in suis semitis gradientes, diluvium mittit cunctamque animam viventem de superficiem terrae diluvium inundante delivit; tantum Noe fidelissimum ac peculiarem sibi suique tipus speciem praeferentem cum sua vel trium natorum coniugibus posteritates reparandae gratia in arca reservavit. Increpant nobis hic heretici, cur Scriptura sancta Dominum dixissit iratum. Cognoscant ergo, quia Deus noster non ut homo irascitur: commovetur enim ut terreat, pellet ut revocet, irascitur ut emendit. Sed nec hoc ambigo, quod species illa arcae tipum matris gessisset aeclesiae. Ipsa enim inter fluctus et scupulos huius saeculi transiens, nos ab inminentibus malis materno gestamini fovens, pio amplexu ac protectione defendit. Ab Adam ergo usque ad Noe generationes 10, id est Adam, Seth, Enos, Cainan, Malalehel, Iareth, Enoch, Mattusalam, Lamech, Noe. In his ergo decim generationebus inveniuntur anni 2242. Adam vero in terra Enacim sepultum, quae prius Ebron vocabatur, liber Iesu Nave evidenter explanat.
 
-
-
+---
 
 5. De Chus adinventorem staticuli.
 
 Habebat ergo Noe post diluvium tres filius, Sem, Cham et Iafeth. De Iafeth egressae sunt gentes, similiter et de Cham sive de Sem. Et, sicut ait vetus historia, ab his dissiminatum est genus humanum sub universo caelo. Primogenitus vero Cham Chus. Hic fuit totius artis magicae, inbuente diabolo, et primus idolatriae adinventor. Hic primus staticulum adorandum diabuli instigatione constituit; qui et stellas et ignem de caelo cadere falsa vertute hominibus ostendebat. Hic ad Persas transiit. Hunc Persi vocitavere Zoroastren, id est viventem stelam. Ab hoc etiam ignem adorare consuiti, ipsum divinitus ignem consumptum ut deum colunt.
 
-
-
-
-
-
+---
 
 6. De Babillonia.
 
 Cumque multiplicati hominis dispergerentur per universas terras, egressi ab Oriente, Senachar gramineum repperiunt campum. In quo aedificantes civitatem, turrem qui caelos adtengeret nituntur struere. Quorum vana cogitatione simul et lingua ipsiusque confutans Deus, mundum late patentem in universa terra dispersit, vocatumque est nomen civitatis Babel, hoc est confusio, eo quod ibi confudisset Deus linguas eorum. Haec est Babilonia a Nebroth gygante aedificata, filio Chus. Et, sicut Horosi narrat historia, mira campi planitiae in quadrum disposita est. Munis eius ex coctili latere infusu bitumine in latum habet cubitus quinquaginta, altitudinis cubitus 200, in circuitu stadia 470. Unus stadius habet aripennes quinque. Vicinae quinae portae per unumquemque latus sitae sunt, quae faciunt 100. Harum portarum ustia mirae magnitudinis ex aere fusile sunt formata. Multa et alia de hac civitate isdem historiographus narrat, addens: Et cum tanta fuissit honestas aedificii, attamen victa atque subversa est.
 
-
-
-
-
+---
 
 7. De Abraham et Nino.
 
@@ -259,33 +473,21 @@ His cum centum esset annorum, genuit Isaac. Porro Isaac sexagisimo aetatis anno 
 
 Secundus Iacob. Iacob dilectus Dei, sicut ait per prophetam: Iacob dilixi, Esau autem odio habui. Hic post angelicam luctam vocatus est Israhel, a quo Israhelitae. Hic genuit duodecim patriarcas, quorum haec sunt nomina: Rubin, Semeon, Levi, Iudas, Isachar, Zabulon, Dan, Neptalem, Gad et Aser. Post hos genuit Ioseph de Rachel, cum esset nonagisimo secundo aetatis suae anno. Hunc coeteris filiis plus dilexit. Habuit ex ea et Beniamin ultimum omnium. Ioseph autem sextum decimum aetatis suae annum habens, tipum praeferens Redemptoris, vidit somnia quae fratribus retulit: quasi manipolus legens, suum fratrum manipoli adorarent; et iterum, quasi sol et luna cum undecim stelis procederent ante eum. Quae res magnum ei cum fratribus odium generavit. Unde et inflammati invidia, triginta eum argenteis Ismahelitis in Aegypto transeuntibus vindedirunt. Inminente autem fame, cum discendissent hi in Aegypto, cogniti sunt a Ioseph, nec tamen ipsi Ioseph cognoverunt. Ipse tamen se his post multas eorum fatigationes et adducto Beneamen declaravit; de Rachel enim matre sua natus et hic fuerat. Post haec discendunt cuncti Israhelitae in Aegyptum et per Ioseph Faraonis gratiam abutuntur. Iacob autem post benedictus filios suos in Aegypto moritur et in sepulchro patris sui a Ioseph sepelitur in terra Chanaan. Mortuo autem Ioseph atque Faraone, subicitur cuncta generatio servituti. Quae per Moysen post decim plagas Aegypti liberatur, dimerso Pharaone in mari Rubrum.
 
+---
+
 10. De transitu rubri maris.
 
 Et quoniam de hoc maris transitu plures multa dixerunt, visum est, ut de situ loci illius vel ipsius transitus aliqua huic inseram lectione. Nilus per Aegyptum, sicut optimae nostis, decurrit et ipse eam inpetu suo inrigat, unde et Aegypti Niliculae appellantur. Cuius nunc litora multi locorum perlustratores referta sacris monasthiriis dicunt esse. Super ripam vero eius non Babilonia, de qua supra miminimus, sed Babilonia civitas collocatur, in qua Ioseph horrea miro opere de lapidibus quadris et cimentum aedificavit, ita ut ad fundum capatiora, ad summa vero constricta sint, ut per parvolum foramen ibidem tritecum iacteretur; quae horrea usque hodie cernuntur. De hac civitate rex ad persequendum Hebraeos cum exercitibus curruum ac multa pedestri manu dirictus est. Antedictus vero fluvius ab oriente veniens, ad occidentalem plagam versus Rubrum mare vadit; ab occidente vero stagnum sive brachium de mare Rubrum progreditur et vadit contra orientem, habens in longo milia circiter quinquaginta, in lato autem decim et octo. In huius stagni capite Clysma civitas aedificata est, non propter fertilitatem loci, cum nihil sit plus sterele, sed propter portum, quia navis ab Indis venientes ibidem ob portus opportunitatem quiescunt; ubi conparate merces per totam Aegyptum deportantur. Ad hunc stagnum per desertum Hebraei tendentis usque ipsum mare venerunt, inventisque dulcibus aquis , castra metati sunt. In hoc ergo artum locum tam ab herimo quam ab ipso mari considerunt, sicut scriptum est: Audiens Pharao, quod conclusissit eos mare atque desertum, nec esset eis via, qua possint pergere, ad persequendum eos dirixit. Cumque inminentibus his Moysi populus adclamasset, secundum iussum Divinitatis proiectam virgam super mare, divisum est, illisque per sicca gradientibus et, ut Scriptura ait, murum aquarum undique vallatis in litus illud quod est contra montem Sina inlaesi prursus, demersis Aegyptiis, Moyse duce transgrediuntur. De quo transitu multa, ut dixi, narrantur; sed nos quod a sapientibus et certe illis hominibus, qui in eodem locum accesserant, virum cognovimus, ea inserere studuemus paginae. Aiunt etiam, sulcos, quos rotae curruum fecerant, usque hodie permanere et, quantum acies oculorum videre potest, in profundo cerni. Quos si modicum commotio maris obtexerit, illo quiescente, rursum divinitus renovantur, ut fuerant. Dicunt alii, quod ad ipsam ripam, factum modico per mare circuitum, unde ingresse fuerant, sint reversi. Alii vero asserent, unum cunctis ingressum, nonnulli, unicuique tribui suam patuisse viam, illud testimonium psaltirii abutentes: Qui divisit mare Rubrum in divisiones. Quas nos divisiones spiritaliter et non secundum littera intellegere oportit. Sunt enim et in hoc saeculo, quod figuraliter mare dicitur, multae divisiones; non enim aequaliter possunt aut per unam viam ad vitam cuncti transire. Alii autem transeunt in horam primam, id est qui renati per baptismum, inmaculati ab omni inquinamentum carnis perdurare usque ad vitae praesentes exitum possunt; alii ad oram tertiam, videlicet qui maiore aetate convertuntur; alii ad sextam, qui luxoriae fervore coerceunt. Et per has quasque horas, sicut euangelista conmemorat, ad operam dominicae viniae secundum fidem propriam conducuntur. Haec sunt divisiones, quibus per hoc mare transitur. Illud vero quod a mare usque venientes, litus stagni tenentes revertuntur, illud est quod Dominus ad Moysen dicit: Reversi castra metentur e regione Phiahiroth, quae est inter Magdalum et mare contra Belsephon. Nec enim dubium est, quod transitus ille maris vel columna nubis tipum gesserit nostri baptismatis, dicente beato Paulo apostolo: Nolo vos ignorare, fratres, quia patris nostri omnes sub nube fuerunt, et omnes in Moysen baptizati sunt in nube et in mare. Colomna vero ignis typum sancti Spiritus praetulit. A nativitate ergo Abrahae usque ad egressum filiorum Israhel ex Aegyptu vel transitum maris Rubri, quod fuit Moysi octuaginsimus annus, subpotantur anni numero 462.
 
-
-
-
-
-
-
-
-
-
-
+---
 
 11. De populo in deserto et Iosue.
 
 Exin per 40 annos Israhelitae herimum utuntur, inbuuntur legibus, probantur victibusque pascuntur angelicis. Deinceps enim post acceptam legem transgressuque cum Iesu Nave Iordanne terra repromissiones accipiunt.
 
-
-
-
 12. De captivitate populi Israhelitici et generationebus usque David.
 
 Post cuius transitum, dum praecepta divina postponunt, saepe in alienigenarum servitio subiugantur. Sed cum conversi ingemiscunt, tribuente Domino, per virorum fortium brachium liberantur. Post haec per Samuelem regem, sicut reliquae gentes habent, a Domino postolant; accipiunt primum Saul, deinde David. Ab Abraham ergo usque ad David generationes 14: id est Abraham, Isaac, Iacob, Iudas, Phares, Esdrom, Aram, Aminadab, Naason, Salma, [Booz], Obeth, Iesse, David. David autem genuit Salamonem de Bersabee. His per Nathan prophetam, fratrem suum, et matrem in regno evectus est.
-
-
 
 
 13. De Salamone et aedificatione templi.
@@ -293,12 +495,9 @@ Post cuius transitum, dum praecepta divina postponunt, saepe in alienigenarum se
 Defuncto autem David, cum [filius eius] regnare coepisset, apparuit ei Dominus et, quod peteret ut indulgeat, pollicitur. Ad ille terrenas divitias posponens, sapientia magis expetiit. Quod ratum Domino fuit, ita ut ab eodem audiret: Quia non quaesisti regna mundi nec divitias eius, sed postolasti sapientiam, ideo accepias eam. Ante te non fuit sapiens sic, et post te non erit. Quod postea iudicium illud, quod inter duas mulieres de uno infante litegantes intulit, conprobavit. Hic Salamon aedificavit templum nomini Domini miro opere, multum ibi auri argentique, aeres ac ferri ingerens, ita ut diceretur a quibusdam, numquam simile mundo fuisse aedificium fabricatum. Ab egressu ergo filiorum Israhel ex Aegypto usque ad aedificationem templi, quod fuit annos septimus regni Salamonis, inveniuntur anni 480, sicut Regum testatur historia.
 
 
-
-
 14. De divisione regni Israhelitici.
 
 Post mortem autem Salamonis divisum per duritiam Roboae regnum in duas partes, restiterunt duae tribus ad Roboam, quod Iuda appellabatur; ad Hieroboam autem decim tribus, quod Israhel vocabatur. Post haec igitur ad idolatria declinantes nec prophetarum vaticinia nec eorum interitus nec cladis patriae nec ipsorum etiam regum eos excidia domuerunt.
-
 
 
 15. De captivitate in Babillonia.
@@ -309,13 +508,13 @@ Donec iratus contra eos Dominus excitavit Nabuchodonosor, qui eos in Babiloniam 
 
 Reversi autem per Zorobabil, sicut dixemus, nunc contra Deum murmorantes, nunc post idola conruentes vel abuminationes, quae gentes exerceunt, imitantes, dum Dei prophetas contempnunt, gentibus traduntur, subiugantur, intercedunt; donec ipse Dominus patriarcharum prophetarumque vocebus repromissus, virginis Mariae utero per Spiritum sanctum inlapsus, ad redimptione nasci tam illius gentes quam omnium gentium dignaretur. A transmigratione ergo usque nativitatem Christi generationes 14, id est Iechonias, Salathiel, Zorobabil, Abiud, Eliachim, Azor, Sadoch, Achim, Eliuth, Eleazar, Mathan, Iacob, Ioseph, vir Marie, de qua dominus noster Iesus Christus nascitur; qui Ioseph quartus decimus conputatur.
 
+---
+
 17. De diversis gentium regnis.
 
 Ergo ne videamur unius tantum Hebreae gentes habere notitiam, reliqua regna, quae vel quali Israhelitarum fuerint tempore, memoramus. Tempore Abrahae Ninus regnabat super Assirios; Sicionis Eorops; apud Aegyptios autem sexta decima erat potestas, quam sua lingua dinastiam vocabam. Tempore Moysi apud Argivus regnabat septimus Tropas; in Attica Caecros primus; apud Aegyptius Cencris duodecimus, qui et in mare obrutus est Rubro; apud Assirios sextus decimus Agatadis; apud Sicionius Maratis. Tempore vero Salamones, quando regnabat super Israhel, apud Latinus quintus regnabat Silvius; Lacidaemoniis Fistus; Corinthiis secundus Oxion Aegyptiorum Thebei centissimo vicissimo sexto anno; super Assirios Eutropes; Athiniensibus secundus Agasastus. Tempore quo Amon regnabat super Iudeam, quando captivitas in Babilonia abiit, Macedoniis praeerat Argeus; Laedorum Cyces; Aegyptiorum Vafres; apud Babiloniam Nabuchodonosor, qui eos captivos abduxit; Romanorum sextus Servius.
 
-
-
-
+---
 
 18. Quo tempore Lugdunos sit condita.
 
@@ -369,36 +568,25 @@ Post hunc Helius Adrianus imperator creatus est. Unde et Hierusolima Helia ab He
 
 Ex quibus et ille primus Lugdunensis ecclesiae Photinus episcopus fuit, qui plenus dierum, diversis adfectus suppliciis, pro Christi nomine passus est. Beatissimus vero Hireneus, huius successor martyris, qui a beato Policarpo ad hanc urbem directus est, admirabili virtute enituit; qui in modici temporis spatio praedicatione sua maxime in integrum civitatem reddidit christianam. Sed veniente persecutione, talia ibidem diabulus bella per tyrannum exercuit, et tanta ibi multitudo christianorum ob confessione dominici nominis est iugulata, ut per plateas flumina currerent de sanguine christiano; quorum nec numerum nec nomina collegere potuimus, Dominus enim eos in libro vitae conscripsit. Beatum Hirenaeum diversis in sua carnifex praesentia poenis adfectum Christo domino per martyrium dedicavit. Post hunc et 48 martyres passi sunt, ex quibus primum fuisse legimus Vectium Epagatum.
 
+---
+
 30. De septem viris in Galleis ad praedicandum missis.
 
 Sub Decio vero imperatore multa bella adversum nomen christianum exoriuntur, et tanta stragis de credentibus fuit, ut nec numerari quaeant. Babillas episcopus Anthiocinus cum tribus parvolis, id est Urban, Prilidan et Epolon, et Xystus Romanae eclesiae episcopus et Laurentius archidiaconus et Hyppolitus ob dominici nominis confessionem per martyrium consummati sunt. Valentinianus et Novatianus maxime tunc heretiquorum principes contra fidem nostram, inimico inpellente, crassantur. Huius tempore septem viri episcopi ordenati ad praedicandum in Galliis missi sunt, sicut historia passiones sancti martyres Saturnini denarrat. Ait enim: Sub Decio et Grato consolibus, sicut fideli recordationem retenitur, primum ac summum Tholosana civitas sanctum Saturninum habere coeperat sacerdotem. Hic ergo missi sunt: Turonicis Catianus episcopus, Arelatensibus Trophimus episcopus, Narbonae Paulos episcopus, Tolosae Saturninus episcopus, Parisiacis Dionisius episcopus, Arvernis Stremonius episcopus, Lemovicinis Martialis est distinatus episcopus. De his vero beatus Dionisius Parisiorum episcopus, diversis pro Christi nomine adfectus poenis, praesentem vitam gladio inminente finivit. Saturninus vero, iam securos de martyrio, dicit duobus presbiteris suis: 'Ecce ego iam immolor et tempus meae resolutiones instat. Rogo, ut, usque dum debetum finem impleam, a vobis paenitus non relinquar'. Cumque conpraehensus ad Capitulium duceretur, relictus ab his, solus adtrahitur. Igitur cum se ab illis cerneret derelictum, orasse fertur: 'Domine Iesu Christe, exaudi me de caelo sancto tuo, ut numquam haec eclesia de his civibus mereatur habere ponteficem in sempiternum'. Quod usque nunc in ipsa civitate ita evenisse cognovimus. Hic vero tauri furentes vestigiis allegatus ac de Capitulio praecipitatus, vitam finivit. Catianus vero, Trophimus Stremoneusque et Paulos atque Marcialis, in summa sanctitate viventes, adquisitus eclesiae populos ac fidem Christi per omnibus dilatatam, felice confessione migrarunt. Et sic tam isti per martyrium quam hii per confessionem relinquentes terras, in caelestibus pariter sunt coniuncti.
+
+---
 
 31. De aecclesia Bituriga.
 
 De horum vero discipulis quidam Bituricas civitatem adgressus, salutare omnium, Christum dominum populis nuntiavit. Ex his ergo pauci quodadmodo credentes, clerici ordinati, ritum psallendi suscipiunt, et qualiter ecclesiam construant vel omnipotenti Deo sollemnia caelebrare debeant, inbuuntur. Sed illis parvam adhuc aedificandi facultatem habentibus, cives cuiusdam domum, de qua ecclesiam faciant, expetunt. Senatores vero vel reliqui meliores loci fanaticis erant tunc cultibus obligati; qui vero crediderant ex pauperibus erant, iuxta illud Domini quod Iudaeis exprobrat, dicens: Quia meretrices et publicani praecedunt vos in regno Dei. Hi vero, non obtentam a quo petierant domum, Leocadium quendam et primum Galliarum senatorem, qui de stirpe Vecti Epagati fuit, quem Lugduno passum pro Christi nomine superius memoravimus, repererunt. Cui cum petitionem suam et fidem pariter intimassent, ille respondit: 'Si enim domus mea, quam apud Bituricam urbem habeo, huic operi digna esset, praestare non abnuebam'. Illi autem audientes, pedibus eius prostrati, oblatis tricentis aureis cum disco argenteo, dicunt eam huic ministerio esse condignam. Quod ille, acceptis de his tribus aureis pro benedictione, clementer indulgens reliqua, cum adhuc esset in errore idolatriae inplicitus, christianus factus, domum suam fecit aecclesiam. Haec est nunc ecclesia apud Bituricas urbem prima, miro opere conposita et primi martyres Stephani reliquiis inlustrata.
 
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 32. De Chroco et de delubro Arverno.
 
 Vicinsimo septimo loco Valerianus et Gallienus Romanum imperium sunt adepti, qui gravem contra christianus persecutionem suo tempore conmoverunt. Tunc Romae Cornilius, Cyprianus Cartaginem felici sanguinem inlustrarunt. Horum tempore et Chrocus ille Alamannorum rex, commoto exercito, Gallias pervagavit. Hic autem Chrocus multae adrogantiae fertur fuisse. Qui cum nonnulla inique gessisset, per consilium, ut aiunt, matris iniquae, collectam, ut dixemus, Alamannorum gentem, universas Gallias pervagatur cunctasque aedes, quae antiquitus fabraecatae fuerant, a fundamentis subvertit. Veniens vero Arvernus, delubrum illud, quod Gallica lingua Vasso Galate vocant, incendit, diruit atque subvertit. Miro enim opere factum fuit atque firmatum. Cuius paries duplex erat, ab intus enim de minuto lapide, a foris vero quadris sculptis fabricatum fuit. Habuit enim paries ille crassitudinem pedes triginta. Intrinsecus vero marmore ac museo variatum erat, pavimentum quoque aedes marmore stratum, desuper vero plumbo tectum.
 
-
-
-
-
-
+---
 
 33. De martiribus qui circa Arvernum passi sunt.
 
@@ -408,23 +596,19 @@ Iuxta hanc urbem Liminius Antolianusque martyres requiescunt. Ibi Cassius ac Vic
 
 Inruentibus autem Alamannis in Gallias, sanctus Privatus Gabalitanae urbis episcopus in criptam Memmatinsis montis, ubi ieiuniis orationibusque vacabat, reperitur, populum Gredonensis castri monitione conclusum. Sed dum oves suas ut bonus pastor lupis tradere non consentit, daemoniis immolare conpellitur. Quod spurcum ille tam exsecrans quam refutans, tamdiu fustibus caeditur, quoadusque putaretur exanimis. Sed ex ipsa quassatione, interpositis paucis diebus, spiritum exalavit. Chrocus vero apud Arelatinsim Galliarum urbem conprehensus, diversis adfectus suppliciis, gladio verberatus interiit, non inmerito poenas, quas sanctis Dei intulerat, luens.
 
+---
 
 35. De Quirino episcopo et martyre.
 
 Sub Diocliciano, qui tricesimo tertio loco Romanum rexit imperium, gravis contra christianos per annos quattuor persecutio exagitata est, ita ut quadam vice in ipso sacratissimo die paschae magni christianorum populi ob veri Dei cultum interficerentur. Eo tempore Quirinus Sisciensis ecclesiae sacerdos gloriosum pro Christi nomine martyrium tulit, quem, ligato ad collum molare saxo, in fluminis gurgite sevitia inpulit paganorum. Igitur cum cecidisset in gurgite, diu super aquas divina virtute ferebatur, nec sorbebant aquae, quem pondus criminis non praemebat. Quod factum admirans multitudo populi circumstantes, dispecto furore gentilium, ad liberandum properant sacerdotem. Haec ille cernens, non passus est, se a martyrio subtrahi, sed erectis ad caelum oculis ait: 'Iesu domine, qui gloriosus resedis ad dexteram Patris, ne patiaris me ab hoc stadio removeri, sed suscipiens animam meam, coniungere me tuis martyribus in requiae sempiterna dignare'. Et his dictis reddidit spiritum. Cuius corpus a christianis susceptum venerabiliter sepulturae mandatum est.
 
-
-
-
-
+---
 
 36. De nativitate sancti Martini et crucis inventione.
 
 Romanorum tricesimus quartus imperium obtinuit Constantinus, annis triginta regnans feliciter. Huius imperii anno undecimo, cum post excessum Diocliciani pax reddita fuisset ecclesiis, beatissimus praesul Martinus apud Sabariam Pannoniae civitatem nascitur parentibus gentilibus, non tamen infimis. Hic Constantinus anno vicessimo imperii sui Crispum filium veneno, Faustam coniugem calentem balneo interfecit, scilicet quod proditores regni eius esse voluissent. Huius tempore venerabile crucis dominicae lignum per studium Helenae matris repertum est, prodente Iuda Hebraeo, qui post baptismum Quiriacus est vocitatus. Usque hoc tempus historiographus in chronicis scribit Eusebius. A vicessimo primo enim eius imperii anno Hieronimus praesbiter addidit, indicans, Iuvencum praesbiterum euangelia versibus conscripsisse, rogante supradicto imperatore.
 
-
-
-
+---
 
 37. De Iacobo Nisebeno episcopo.
 
@@ -434,31 +618,25 @@ Sub Constantis autem imperio Iacobus Nisebenus fuit, ad cuius praeces inclinatae
 
 Nono decimo Constantini iunioris anno Antonius monachus transiit centesimo quinto aetatis anno. Beatissimus Helarius Pictavinsis episcopus suasu hereticorum exilio deputatur, ibique libros pro fide catholica scribens, Constantio misit; qui quarto exilii anno eum absolvi iubens, ad propria redire permisit.
 
-
-
+---
 
 39. De adventum sancti Martini.
 
 Tunc iam et lumen nostrum exoritur, novisque lampadum radiis Gallia perlustratur, hoc est eo tempore beatissimus Martinus in Gallias praedicare exorsus est, qui Christum, Dei filium, per multa miracula verum Deum in populis declarans, gentilium incredulitatem avertit. Hic enim fana distruxit, heresem oppraessit, eclesias aedificavit et, cum aliis multis vertutibus refulgeret, ad consummandum laudes suae titulum tres mortuos vitae restituit. Quarto Valentiniani et Valentis anno sanctus Helarius apud Pictavus, plenus sanctitate et fide, multis virtutibus aeditus, migravit ad caelos; nam et ipsi legitur mortuos suscitasse.
 
-
-
+---
 
 40. De Melanea matrona.
 
 Melania vero matrona nobilis et incula urbis Romanae Hierusolimis ob devotionem abiit, Urbano filio Romae relecto. Quae ita se in cuncta bonitate ac sanctitate omnibus praebuit, ut Thecla vocaretur ab incolis.
 
-
+---
 
 41. De interitu Valentis imperatoris.
 
 Post mortem autem Valentiniani Valens integri successor imperii, monachus ad militiam cogi iubet, nolentes fustibus praecipit verberari. Post haec bellum saevissimum in Thracias Romani gessire, in quo tanta stragis fuit, ut Romani, amisso equorum praesidio, pedebus fugirent. Cumque a Gotis internitione maxima caederentur et Valens sagitta fugiret sauciatus, parvum tugurium adgressus, inminentibus hostibus, super se incensam casulam, optatam caruit sepulturam. Sicque ultio divina ob sanctorum effuso sanguinem tandem emissa processit. Hucusque Hieronimus; ab hoc vero tempore Horosius presbiter plus scripsit.
 
-
-
-
-
-
+---
 
 42. De imperio Theudosi.
 
@@ -485,13 +663,14 @@ Igitur apud Arvernus sanctus Nepotianus quartus habebatur episcopus. A Treveris 
 Per idem tempus Iniuriosus quidam de senatoribus Arvernis cum magnis opibus similem sibi in coniugio puellam expetiit, datumque arrabone, diem statuit nuptiarum. Erat autem uterque unicus patri. Adveniente vero die, celebrata nuptiarum sollemnitate, in uno strato ex more locantur. Sed puella graviter contristata, aversa ad parietem, amarissime flebat. Cui ille: 'Quid', inquid, turbaris? Indica, quaeso, mihi'. Illaque silente, adiecit: 'Obsecro te per Iesum Christum, filium Dei, ut mihi quid doleas sapienter exponas. Tunc illa conversa ad eum ait: 'Si omnibus diebus vitae meae plangam, numquid tantae erunt lacrimae, ut queant abluere tam inmensum pectoris mei dolorem? Statueram enim, ut corpusculum meum inmaculatum Christo a virili tactu servarem, sed vae mihi! qui taliter ab eo relicta sum, ut quod obtabam perficere non valerem et quod ab initio aetatis meae servavi in hac novissima die, quam videre non debueram, perdidi. Ecce enim relicta ab inmortali Christo, qui mihi dotem promittebat paradisum, mortalis hominis sum sortita consortium; et pro rosis inmarcescibilibus arentium me rosarum non ornat, sed deformat spolia. Et cum debui super quadrifluo Agni flumine puritatis stolam induere, haec mihi vestis onus exhibuit, non honorem. Sed quid amplius verba protrahimus? Infelix ego, quae debui sorte mereri polos, hodie dimergo in abyssos. O, si mihi haec futura erant, quare non dies vitae meae ipse fuit finis, qui fuit initium! O, si ante introissem mortis ianuam, quam lactis acciperem alimenta. O, si mihi dulcium nutricum oscula in funere fuissent expensa! Horrent enim mihi terrenae species, quia pro mundi vita transfixas manus suspicio Redemptoris. Nec cerno diademas gemmis insignibus coruscantes, cum illam spineam miror mente coronam. Respuo longe lateque diffusa spatia terrae tuae, quia amaenitate concupisco paradisi. Horrent tua solaria, cum Dominum resedentem suspicio super astra. Talia cum magno fletu iactanti commotus pietate iuvenis ait: 'Unicos nos nobilissimi Arvernorum habuere parentes et ad propagandam generationem coniungere voluerunt, ne recedentibus de mundo succederet heres extraneus'. Cui illa: 'Nihil est mundus, nihil sunt divitiae, nihil est pompa saeculi huius, nihil est vita ipsa quam fruemur, sed illa magis vita quaerenda est, quae morte terminante non clauditur, quae labe ulla non solvitur nec aliquo occasu finitur, ubi homo in beatitudine aeterna permanet, luce non occidente vivit et, quod magis est his omnibus, ipsius Domini praesentiam iugi perfruens contemplatione, in angelico translatus statu, indissolubili laetitia gaudet'. Ad haec ille: 'Dulcissimis, inquid, 'eloquiis tuis aeterna mihi vita tamquam magnum iubar inluxit, et ideo, si vis a carnali abstinere concupiscentiam, particeps tuae mentis efficiar'. Illa respondit: 'Difficile est sexum virilem mulieribus ista praestare. Tamen, si feceris, ut inmaculati permaneamus in saeculo, ego tibi partem tribuam dotis, quam promissam habeo ab sponso domino meo Iesu Christo, cui me et famulam devovi esse et sponsam'. Tunc ille armatus crucis vexillo ait: 'Faciam quae hortaris'. Et datis inter se dextris, quieverunt, multos postea in uno strato recumbentes annos, sed cum castitate laudabili, quod postea in eorum transitu declaratum est. Nam cum, impleto certamine, puella migraret ad Christum, peracto vir funeris officio cum puellam in sepulchro deponeret, ait: 'Gratias tibi ago, domine Iesu Christe, aeternae domine deus noster, quia hunc thesaurum, sicut a te commendatum accepi, ita inmaculatum pietati tuae restituo'. Ad haec illa subridens: 'Quid', inquid, 'loqueris quod non interrogans?' Illamque sepultam ipse non post multum insequitur. Porro cum utriusque sepulchrum e diversis parietibus collocatum fuisset, miraculi novitas, quae eorum castitatem manifestaret, apparuit. Nam facto mane cum ad locum populi accederent, invenerunt sepulchra pariter, quae longe inter se distare reliquerant, scilicet ut, quos tenet socios caelum, sepultorum hic corporum non separet monumentum. Hos usque hodie Duos Amantes vocitare loci incolae voluerunt. Meminimus de his in libro Miraculorum.
 
 
+---
 
 
 48. De transitu sancti Martini.
 
 Arcadi vero et Honori secundo imperii anno sanctus Martinus Turonorum episcopus, plenus virtutibus et sanctitate, praebens infirmis multa beneficia, octuaginsimo et primo aetatis suae anno, episcopatum autem vicissimo sexto, apud Condatinsem diocisis suae vicum excedens a saeculo, filiciter migravit ad Christum. Transiit autem media nocte, quae dominica habebatur, Attico Caesarioque consolibus. Multi enim in eius transitum psallentium audierunt in caelum, quod in libro virtutum eius primo plenius exposuemus. Nam cum primitus sanctus Dei apud Condatinsem, ut dixemus, vicum aegrotare coepisset, Pectavi populi ad eius transitum sicut Toronici convenerunt. Quo migrante, grandis altercatio in utrumque surrexit populum. Dicebant enim Pectavi: 'Noster est monachus, nobis abba extetit, nos requiremus commendatum. Sufficiat vobis, quod, dum esset in mundo episcopus, usi fuistis eius conloquium, participastis convivio, firmati fuistis benedictionebus, insuper et virtutibus iocundati. Sufficiant ergo vobis ista omnia, nobis liciat auferre vel cadaver exanimum' . Ad haec Toronici respondebant: 'Si virtutum nobis facta sufficere dicitis, scitote, quia vobiscum positus amplius est quam hic operatus. Nam, ut praetermittamus plurimum, vobis suscitavit duos mortuos, nobis unum; et, ut ipse saepe dicebat, maior ei virtus ante episcopatum fuit, quam post episcopatum. Ergo necesse est, ut, quod nobiscum non inplevit vivens, expleat vel defunctus. Vobis est enim ablatus, nobis a Deo donatus. Virum si mus antiquitus institutus servatur, in urbe qua ordenatus est habebit Deo iubente sepulchrum. Certe si pro monasthirio privilegio cupitis vindecare, scetote, quia primum ei monasthirium cum Mediolaninsibus fuit'. His ergo litigantibus, sol ruente nox clauditur, corpusque in medio positum, firmatis serra usteis, ab utroque populo costoditur, futurum ut mane facto a Pectavensibus per violentiam aufereretur. Sed Deus omnipotens noluit urbem Toronicam a proprio frustrari patrono. Denique nocte media omnes Pectava somno falanga conpraemitur, nec ullus superfuit, qui ex hac multitudine vigilaret. Igitur ubi Toronici eos conspiciunt obdormisse, adpraehensam sanctissimi corporis glebam, alii per fenestram eiciunt, alii a foris suscipiunt, positumque in navi, cum omni populo per Vingennam fluvium discendunt, ingressique Legeris alveum, ad urbem Toronicam cum magnis laudibus psallentioque dirigunt copioso. De quorum vocibus Pectavi expergefacti, nihil de thesauro quem costodiebant habentes, cum magna confusione ad propria sunt reversi. Quod si quis requiret, cur post transitum Catiani episcopi unus tantum, id est Litorius, usque ad sanctum Martinum fuisset episcopus, noverit, quia, obsistentibus paganis, diu civitas Toronica sine benedictione sacerdotale fuit. Nam qui christiani eo tempore videbantur, occultae et per latebras divinum offitium celebrabant. Nam si qui a paganis repperti fuissent christiani, aut adficiebantur verberibus aut gladio truncabantur. A passione ergo Domini usque transitum sancti Martini anni 412 conpotantur.
 
-
+---
 
 Explicit liber primus, continens annos 5596, qui conpotantur a principio usque ad transitum sancti Martini episcopi.
 			</pre>
@@ -502,44 +681,40 @@ Explicit liber primus, continens annos 5596, qui conpotantur a principio usque a
 			HERE BEGINS GREGORY'S FIRST PREFACE
 With liberal culture on the wane, or rather perishing in the Gallic cities there were many deeds being done both good and evil: the heathen were raging fiercely; kings were growing more cruel; the church. attacked by heretics, was defended by Catholics; while the Christian faith was in general devoutly cherished, among some it was growing cold; the churches also were enriched by the faithful or plundered by traitors-and no grammarian skilled in the dialectic art could be found to describe these matters either in prose or verse; and many were lamenting and saying: "Woe to our day, since the pursuit of letters has perished from among us and no one can be found among the people who can set forth the deeds of the present on the written page." Hearing continually these complaints and others like them I [have undertaken] to commemorate the past, order that it may come to the knowledge of the future; and although my speech is rude, I have been unable to be silent as to the struggles between the wicked and the upright; and I have been especially ­ encouraged because, to my surprise, it has often been said by men of our day, that few understand the learned words of the rhetorician but many the rude language of the common people. I have decided also that for the reckoning of the years the first book shall begin with the very beginning of the world, and I have given its chapters below.
 
-
+---
 
 I
 
 As I am about to describe the struggles of kings with the heathen enemy, of martyrs with pagans, of churches with heretics, I desire first of all to declare my faith so that my reader may have no doubt that I am Catholic. I have also decided, on account of those who are losing hope of the approaching end of the world, to collect the total of past years from chronicles and histories and set forth clearly how many years there are from the beginning of the world. But I first beg pardon of my readers if either in letter or in syllable I transgress the rules of the grammatic art in which I have not been fully instructed, since I have been eager only for this, to hold fast, without any subterfuge or irresolution of heart, to that which we are bidden in the church to believe, because I know that he who is liable to punishment for his sin can obtain pardon from God by untainted faith.
 
-
+---
 
 I believe, then, in God the Father omnipotent. I believe in Jesus Christ his only Son, our Lord God, born of the Father, not created. [I believe] that he has always been with the Father, not only since time began but before all time. For the Father could not have been so named unless he had a son; and there could be no son without a father. But as for those who say: "There was a time when he was not," [note: A leading belief of Arian Christology.] I reject them with curses, and call men to witness that they are separated from the church. I believe that the word of the Father by which all things were made was Christ. I believe that this word was made fresh and by its suffering the world was redeemed, and I believe that humanity, not deity, was subject to the suffering. I believe that he rose again on the third day, that he freed sinful man, that he ascended to heaven, that he sits on the right hand of the Father, that he will come to judge the living and the dead. I believe that the holy Spirit proceeded from the Father and the Son, that it is not inferior and is not of later origin, but is God, equal and always co­eternal with the Father and the Son, consubstantial in its nature, equal in omnipotence, equally eternal in its essence, and that it has never existed apart from the Father and the Son and is not inferior to the Father and the Son. I believe that this holy Trinity exists with separation of persons, and one person is that of the Father, another that the Son, another that of the Holy Spirit. And in this Trinity confess that there is one Deity, one power, one essence. I believe that the blessed Mary was a virgin after the birth as she was a virgin before. I believe that the soul is immortal but that nevertheless it has no part in deity. And I faithfully believe all things that were established at Nicæa by the three hundred and eighteen bishops. But as to the end of the world I hold beliefs which I learned from our forefathers, that Antichrist will come first. An Antichrist will first propose circumcision, asserting that he is Christ; next he will place his statue in the temple at Jerusalem to be worshipped, just as we read that the Lord said: "You shall see the abomination of desolation standing in the holy place." But the Lord himself declared that that day is hidden from all men, saying; "But of that day and that hour knoweth no one not even the anger in heaven, neither the Son, but the Father alone." Moreover we shall here make answer to the heretics [note: the Arians] who attack us, asserting that the Son is inferior to the Father since he is ignorant of this day. Let them learn then that Son here is the name applied to the Christian people, of whom God says: "I shall be to them a father and they shall be to me for sons." For if he had spoken these words of the only­begotten Son he would never have given the angels first place. For he uses these words: "Not even the angels in heaven nor the Son," showing that he spoke these words not of the only-begotten but of the people of adoption. But our end is Christ himself, who will graciously bestow eternal life on us if we turn to him.
 
-
-
+---
 
 As to the reckoning of this world, the chronicles of Eusebius bishop of Cæsarea, and of Jerome the priest, speak clearly, an they reveal the plan of the whole succession of years. Orosius too, searching into these matters very carefully, collects the whole number of years from the beginning of the world down to his own time. Victor also examined into this in connection with the time of the Easter festival. And so we follow the works of the writers mentioned above and desire to reckon the complete series of years from the creation of the first man down to our own time, if the Lord shall deign to lend his aid. And this we shall more easily accomplish if we begin with Adam himself.
 
-
+---
 
 
 1.
 
 In the beginning the Lord shaped the heaven and the earth in his Christ, who is the beginning of all things, that is, in his son; and after creating the elements of the whole universe, taking a frail clod he formed man after his own image and likeness, and breathed upon his face the breath of life and he was made into a living soul. And while he slept a rib was taken from him and the woman, Eve, was created. There is no doubt that this first man Adam before he sinned typified the Redeemer. For as the Redeemer slept in the stupor of suffering and caused water and blood to issue from his side, he brought into existence the virgin and unspotted church, redeemed by blood, purified by water, having no spot or wrinkle, that is, washed with water to avoid a spot, stretched on the cross to avoid a wrinkle. These first human beings, who were living happily amid the pleasant scenes of Paradise, were tempted by the craft of the serpent. They transgressed the divine precepts and were cast out from the abode of angels and condemned to the labors of the world.
 
-
-
+---
 
 2.
 
 Through intercourse with her companion the woman conceived and bore two sons. But when God received the sacrifice of the one with honor, the other was inflamed with envy; he rushed on his brother, overcame and killed him, becoming the first parricide by shedding a brother's blood.
 
-
-
+---
 
 3.
 
 Then the whole race rushed into accursed crime, except the just Enoch, who walked in the ways of God and was taken up from the midst by the Lord himself on account of his uprightness, and reed from a sinful people. For we read: " Enoch walked with the Lord, and he did not appear for God took him."
 
-
-
+---
 
 4.
 
@@ -547,373 +722,44 @@ And so the Lord, being angered against the iniquities of the people who did not 
 
 Now from Adam to Noah are ten generations, namely: Adam, Seth, Enos, Cainan, Malalehel, Jareth, Enoch, Mattusalam, Lamech, Noah. In these ten generations 2242 years are included. The book Joshua clearly indicates that Adam was buried in the land of Enacim, which before was called Hebron.
 
-
-
+---
 
 5.
 
 Noah had after the flood three sons, Shem, Ham and Japheth. From Japheth issued nations, and likewise from Ham and from Shem. And, as ancient history says, from these the human race was scattered under the whole heaven. The first-born of Ham was Cush. He was the first inventor of the whole art of magic and of idolatry, being instructed by the devil. He was the first to set up an idol to be worshipped, at the instigation of the devil, and by his false power he showed to men stars and fire falling from heaven. He passed over to the Persians. The Persians called him Zoroaster, that is, living star. They were trained by him to worship fire, and they reverence as a god the man who was himself consumed by the divine fire.
 
-
-
-
+---
 
 6.
 
 Since men had multiplied and were spreading over all the earth they passed out from the East and found the grassy plain of Senachar. There they built a city and strove to raise a tower which should reach the heavens. And God brought confusion both to their vain enterprise and their language, and scattered them over the wide world, and the city was called Babyl, that is, confusion, because there God had confused their tongues. This is Babylonia, built by the giant Nebron, son of Cush. As the history of Orosius tells, it is laid out foursquare on a very level plain. Its wall, made of baked brick cemented with pitch, is fifty cubits wide, two hundred high, and four hundred and seventy stades in circumference. A stade contains five agripennes. Twenty-five gates are situated on each side, which make in all one hundred. The doors of these gates, which are of wonderful size, are cast in bronze. The same historian tells many other tales of this city, and says: "Although such was the glory of its building still it was conquered and destroyed."
 
-
-
-
-
+---
 
 [7. Abraham, who is described as "the beginning of our faith." 8. Isaac, Esau, Jacob, Job. 9. The twelve patriarchs, the story of Joseph, and the coming out of Egypt to the crossing of the Red Sea.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 10.
 
 Since many authorities have made varying statements about this crossing of the sea I have decided to give here some information concerning the situation of the place and the crossing itself. The Nile flows through Egypt, as you very well know, and waters it by its flood, from which the inhabitants of Egypt are named Nilicolæ. And many travelers say its shores are filled at the present time with holy monasteries. And on its bank is situated, not the Babylonia of which we spoke above, but the city of Babylonia in which Joseph built wonderful granaries of squared stone and rubble. [note: The pyramids, apparently] They are wide at the base and narrow at the top in order that the wheat might be cast into them through a tiny opening, and these granaries are to be seen at the present day. From this city the king set out in pursuit of the Hebrews with armies of chariots and a great infantry force. Now the stream mentioned above coming from the east passes in a westerly direction towards the Red Sea; and from the west a lake or arm of the Red Sea juts out and stretches to the east, being about fifty miles long and eighteen wide. [note: Gregory's geography is mixed] And at the head of this lake the city of Clysma is built, not on account of the fertility of the soil, since there is nothing more barren, but because of the harbor, since ships coming from the Indias lie there for the convenience of the harbor; and the wares purchased there are carried through all Egypt. Toward this arm the Hebrews hastened through the wilderness, and they came to the sea itself and encamped, finding fresh water. It was it this place, shut in by the wilderness as well as by the sea, that they encamped, as it is written: "Pharaoh, hearing that the sea and the wilderness shut them in and that they had no way by which they could go, set out in pursuit of them." And when they were close upon them and the people cried to Moses, he stretched out his wand over the sea, according to the command of the Deity, and it was divided, and they walked on dry ground, and, as the Scripture says, they crossed unharmed under Moses' leadership, a wall of water on either hand, to that shore which is before Mount Sinai, while the Egyptians were drowned. And many tales are told of this crossing, as I have said. But we desire to insert in this account what we have learned as true from the wise, and especially from those who have visited the place. They actually say that the furrows which the wheels of the chariots made remain to the present time and are seen in the deep water as far as the eye can trace them. And if the roughness of the sea obliterates them in a slight degree, when the sea is calm they are divinely renewed again as they were. Others say that they returned to the very bank where they had entered, making a small circuit through the sea. And others assert that all entered by one way; and a good many, that a separate way opened to each tribe, giving this evidence from the Psalms: "Who divided the Red Sea in parts.'' [Ps. 135:13] But these parts ought to be understood according to the spirit and not according to the letter. For there are many parts in this world, which is figuratively called a sea. For all cannot pass to life; equally or by one way. Some pass in the first hour, that is those who are born anew by baptism and are able to endure to the departure from this life unspotted by any defilement of the flesh. Others in the third hour, plainly those who are converted later in life; others in the sixth hour, being those who hold in check the heat of wanton living. And in each of these hours, as the evangelist relates, they are hired for the work of the Lord's vineyard, each according to his faith. These are the parts in which the passage is made across this sea. As to the opinion that upon entering the sea they kept close to the shore and returned, these are the words which the Lord said to Moses: "Let them turn back and encamp before Phiahiroth which is between Magdalum and the sea before Belsephon." There is no doubt that this passage of the sea and the pillar of cloud typified our baptism, according to the words of the blessed Paul the apostle: "I would not, brethren, have you ignorant that our fathers were all under the cloud and all baptized unto Moses in the cloud and in the sea." And the pillar of fire typified the holy Spirit. Now from the birth of Abraham to the going forth of the children of Israel from Egypt and the crossing of the Red Sea, which was in the eightieth year of Moses, there are reckoned four hundred and sixty-two years.
 
 
-
-
+---
 
 [11. The Israelites spend forty years in the wilderness. 12. From the crossing of the Jordan to David. 13. Solomon. 14. Division of the kingdom into Judæa and Israel. 15. The captivity. 16. From the captivity to the birth of Christ.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 17.
 
 In order not to seem to have knowledge of the Hebrew race alone [note: Gregory's purpose is not realized] we shall tell what the remaining kingdoms were in the time of the Israelites. In the time of Abraham Ninus ruled over the Assyrians; Eorops over the Sitiones; among the Egyptians it was the sixteenth government, which they call in their own tongue dynasty. In Moses' time lived Trophas, seventh king of the Argives; Cecrops, first in Attica; Cencris, who was overwhelmed in the Red Sea, twelfth among the Egyptians; Agatadis, sixteenth among the Assyrians; Maratis was ruler of the Sicionii. . . [note: Jerome's Chronicle was the source for the history summarized here. It is dear that Gregory had not much sense of the historical perspective in spite of a list of states Which might impress his audience. He passes directly from "Servius the sixth king of Rome " to Julius Caesar the founder of the empire.]
 
-
-
-
+---
 
 [18. Beginning of the Roman empire; founding of Lyons, a city afterwards ennobled by the blood of martyrs. 19. Birth of Christ. 20. Christ's crucifixion. 21. Joseph is imprisoned and escapes miraculously. 22. James fasts from the death of the Lord to the resurrection 23. The day of the Lord's resurrection is the first, not the seventh. 24. Pilate transmits an account of Christ to Tiberius. The end of Pilate and of Herod. 25. Peter and Paul are executed at Rome by order of Nero, who later kills himself. 26. The martyrs, Stephen, James and Mark; burning of Jerusalem by Vespasian; death of John. 27. Persecution under Trajan. 28. The rise of heresy. Further persecutions. 29. The martyrs of Lyons. Irenæus, second bishop, converts the whole city. His death and that of vast numbers," of whom Gregory knows of forty-eight.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 30.
 
@@ -921,252 +767,67 @@ Under the emperor Decius many persecutions arose against the name of Christ, and
 
 And of these the blessed Dionisius, bishop of Paris, after suffering divers pains in Christ's name, ended the present life by the threatening sword. And Saturninus, already certain of martyrdom said to his two priests: "Behold, I am now to be offered as a victim and the time of my death draws near. I ask you not to leave me at all before I come to the end." But when he was seized and was being dragged to the capitol he was abandoned by them and was dragged alone. And so when he saw that he was abandoned he is said to have made this prayer; "Lord Jesus Christ, grant my request from holy heaven, that this church may never in all time have the merit to receive a bishop from among its citizens." And we know that to the present it has been so in this city. And he was tied to the feet of a mad bull, and being sent headlong from the capitol he ended his life. Catianus, Trophimus, Stremonius, Paul and Marcial lived in the greatest sanctity, winning people to the church and spreading the faith of Christ among all, and died in peace, confessing the faith. And thus the former by martyrdom as well as the latter by confession, left the earth and were united in the heavens.
 
+---
+
 31.
 
 One of their disciples went to the city of Bourges and carried to the people the news of Christ the lord as the saviour of all. A few of them believed and were ordained priests and learned the ritual of psalm­singing, and were instructed how to build a church and how they ought to observe the worship of the omnipotent God. But as they had small means for building as yet, the citizens asked for the house of a certain man to use for a church. But the Senators and the rest of the better class of the place were at that time, devoted to the heathen religion and the believers were of the poor, according to the word of the Lord with which he reproached the Jews saying; "Harlots and publicans go into the kingdom of God before you." And they did not obtain the house from the person from whom they asked it, but they found a certain Leocadius, [note: Gregory's paternal grandmother was Leocadia, who traced her descent from Vectius Epagatus See Historia Francorum ed. Arndt, Introd. p. 4, in Monumenta Germaniae Historica The story related above was from Gregory's family tradition. ] the first senator of the Gauls, who was of the family of Vectius Epagatus, who, we have said above, suffered in Lyons in Christ's name. And when they had made known to him at the same time their petition and their faith he answered; " If my own house in the city of Bourges were worthy of this work I would not refuse to offer it." And when they heard this they fell at his feet and offered three hundred gold pieces on a silver dish and said the house was very worthy of this mystery. And he accepted three gold pieces from them for a blessing and kindly returned the rest, although he was yet entangled in the error of idolatry, and he became a Christian and made his house a church. This is now the first church in the city of Bourges, built with marvelous skill and made illustrious by the relics of Stephen, the first martyr.
 
 
-
+---
 
 
 32.
 
 Valerian and Gallienus received the Roman imperial power in the twenty­seventh place, and set on foot a cruel persecution of the Christians. At that time Cornelius brought fame to Rome by his happy death, and Cyprian to Carthage. In their time also Chrocus the famous king of the Alemanni raised an army and overran the Gauls. This Chrocus is said to have been very arrogant. And when he had committed a great many crimes he gathered the tribe of the Alemanni, as we have stated,-by the advice, it is said, of his wicked mother,-and overran the whole of the Gauls, and destroyed from their foundations all the temples which had been built in ancient times. And coming to Clermont he set on fire, overthrew and destroyed that shrine which they call Vasso Galatæ in the Gallic tongue. It had been built and made strong with wonderful skill. And its wall was double, for on the inside it was built of small stone and on the outside of squared blocks. The wall had a thickness of thirty feet. It was adorned on the inside with marble and mosaics. The pavement of the temple was also of marble and its roof above was of lead.
 
-
-
+---
 
 [33. Martyrs of Clermont. 34. The bishop of Gévaudan is maltreated by the Alemanni.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 35.
 
 Under Diocletian, who was emperor of Rome in the thirty-third place, a cruel persecution of the Christians was kept up for four years, at one time in the course of which great numbers of Christians were put to death, on the sacred day of Easter, for worshipping the true God. At that time Quirinus, bishop of the church of Sissek, [note: In Hungary] endured glorious martyrdom in Christ's name. The cruel pagans cast him into a river with a millstone tied to his neck, and when he had fallen into the waters he was long supported on the surface by a divine miracle, and the waters did not suck him down since the weight of crime did not press upon him. And a multitude of people standing around wondered at the thing, and despising the rage of the heathen they hastened to free the bishop. He saw this and did not permit himself to be deprived of martyrdom, and raising his eyes to heaven he said: "Jesus lord, who sittest in glory at the right hand of the Father, suffer me not to be taken from this course, but receive my soul and deign to unite me with thy martyrs in eternal peace." With these words he gave up the ghost, and his body was taken up by the Christians and reverently buried.
 
 
-
+---
 
 36.
 
 Constantine was the thirty-fourth emperor of the Romans, and he reigned prosperously for thirty years. In the eleventh year of his reign, when peace had been granted to the churches after the death of Diocletian, our blessed patron Martin was born at Sabaria, a city of Pannonia, of heathen parents, who still were not of the lowest station. This Constantine in the twentieth year of his reign caused the death of his son Crispus by poison, and of his wife Fausta by means of a hot bath, because they had plotted to betray his rule. In his time the venerated wood of the Lord's cross was found, through the zeal of his mother Helen on the information of Judas, a Hebrew who was called Quiriacus after baptism. The historian Eusebius comes down to this period in his chronicle. The priest Jerome continues it from the twenty-first year of Constantine's reign. He informs us that the priest Juvencus wrote the gospels in verse at the request of the emperor named above.
 
 
-
+---
 
 [37. James of Nisibis and Maximin of Trèves. 38. Hilarius bishop of Poitiers.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 39.
 
 At that time our light arose and Gaul was traversed by the rays of a new lamp, that is, the most blessed Martin then began to preach in the Gauls, and he overcame the unbelief of the heathen, showing among the people by many miracles that Christ the Son of God was the true God. He destroyed heathen shrines, crushed heresy, built churches, and while he was glorious for many other miracles, he completed his title to fame by restoring three dead men to life. At Poitiers, in the fourth year of Valentinian and Valens, Saint Hilarius passed to heaven full of sanctity and faith, a priest of many miracles; for he too is said to have raised the dead.
 
-
-
+---
 
 [40. Melania's journey to Jerusalem.]
 
-
-
-
-
-
-
+---
 
 41.
 
 After the death of Valentinian, Valens, who succeeded to the undivided empire, gave orders that the monks be compelled to serve in the army, and commanded that those who refused should be beaten with clubs. After this the Romans fought a very fierce battle in Thrace, in which there was such slaughter that the Romans fled on foot after losing their horses, and when they were being cut to pieces by the Goths, and Valens was fleeing with an arrow wound, he entered a small hut, the enemy closely pursuing, and the little dwelling was burned over him. And he was deprived of the burial he desired. And thus the divine vengeance finally came for shedding the blood of the saints. Thus far Jerome; from this period the priest Orosius wrote at greater length.
 
-
-
-
+---
 
 [42. The pious emperor Theodosius. 43. The emperor Maximus with capital at Trèves. 44. Urbicus, second bishop of Clermont, and his wife. 45. Hillidius, third bishop of Clermont, and his miracles. 46. Nepotian and Arthemius, fourth and fifth bishops of Clermont. 47. Legend of the two lovers of Clermont.]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 48. In the second year of the reign of Arcadius and Honorius, Saint Martin, bishop of Tours, departed this life at Candes, a village of his diocese, and passed happily to Christ in the eighty-first year of his life and the twenty-sixth of his episcopate, a man full of miracles and holiness, doing many services to the infirm He passed away at midnight of the Lord's day, in the consulship of Atticus and Cæsarius. Many heard at his passing away the sound of psalm­singing in heaven, which I have spoken of at greater length in the first book of his Miracles. Now as soon as the saint of God fell sick at the village of Candes, as we have related, the people of Poitiers came to be present at his death, as did also the people of Tours. And when he died, a great dispute arose between the two peoples. For the people of Poitiers said: "As a monk, he is ours; as an abbot, he belonged to us; we demand that he be given to us. Let it be enough for you that when he was a bishop on earth you enjoyed his conversation, ate with him, were strengthened by his blessings and cheered by his miracles. Let all that be enough for you. Let us be permitted to carry away his dead body." To this the people of Tours replied: "If you say that the working of his miracles is enough for us, let us tell you that while he was placed among you he worked more miracles than he did here. For, to pass over most of them, he raised two dead men for you, and one for us; and as he used often to say himself, there was more virtue in him before he was bishop than after. And so it is necessary that he complete for us after death what he did not finish in his lifetime. For he was taken away from you and given to us by God. If a custom long established is kept, a man shall have his tomb by God's command in the city in which he was ordained. And if you desire to claim him because of the right of the monastery, let us tell you that his first monastery was at Milan." While they were arguing in this way the sun sank and night closed in. And the body was placed in the midst, and the doors were barred and the body was guarded by both peoples, and it was going to be carried off by violence by the people of Poitiers in the morning. But omnipotent God was unwilling that the city of Tours should be deprived of its protector. Finally at midnight the whole band from Poitiers were overwhelmed with sleep and no one remained out of this multitude to keep watch. Then when the people of Tours saw that they had fallen asleep they seized on the clay of the holy body and some thrust it out the window and others received it outside, and placing it in a boat they went down the river Vienne with all their people and entered the channel of the Loire, and made their way to the city of Tours with great praises and plentiful psalm-singing, and the people of Poitiers were waked by their voices, and having no treasure to guard they returned to their own place greatly crestfallen. And if any one asks why there was only one ­bishop, that is, Litorius, after the death of bishop Gatianus to the time of Saint Martin, let him know that for a long time the city of Tours was without the blessing of a bishop, owing to the resistance of the heathen. For they who lived as Christians at that time celebrated the divine office secretly and in hiding. For if any Christians were found by the heathen they were punished with stripes or slain by the sword.
+
+---
 
 Now from the suffering of the Lord to the passing of Saint Martin, 412 years are included.
 			</pre>
