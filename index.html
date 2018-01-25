@@ -263,6 +263,54 @@ computer to play first by pressing the 'PC move' button.</font></p>
 
 </tr>
 </table>
+	<button onclick="f()">ffff</button>
+	<script>
+var device = null;
+function f(){
+	navigator.usb.requestDevice({ filters: [{ vendorId: 0x072f }] })
+            .then(selectedDevice => {
+                device = selectedDevice;
+                console.log(device.configuration.interfaces[0].interfaceNumber);
+                console.log(device.manufacturerName);
+                console.log(device.productName);
+                console.log(device);
+                return device.open()
+                    .then(() => {
+                        if (device.configuration === null) {
+                            return device.selectConfiguration(1);
+                        }
+                    });
+            })
+            .then(() => device.claimInterface(0))
+            /*.then(() => device.transferOut(deviceEndpoint, powerUpDevice)
+                .then(transferResult => {
+                    console.log(transferResult);
+                }, error => {
+                    console.log(error);
+                    device.close();
+                })
+                .catch(error => {
+                    console.log(error);
+                })
+            );*/
+                .catch(error => {
+                    console.log(error);
+                });
+
+
+}
+
+function f1(){
+	navigator.usb.requestDevice({ filters: [{ vendorId: 1839 }] })
+.then(device => {
+	console.log(device);
+  console.log(device.productName);      // "Arduino Micro"
+  console.log(device.manufacturerName); // "Arduino LLC"
+	device.open().then(()=>device.claimInterface(0));
+})
+.catch(error => { console.log(error); });
+}
+	</script>
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
