@@ -24,7 +24,11 @@ function f(){
 		.then(() => {
 			console.log(1);
 			console.log(device);
-			device.claimInterface(0);})
+			device.claimInterface(0);
+		})
+		.then(() => {
+			console.log('ok');
+		})
             /*.then(() => device.transferOut(deviceEndpoint, powerUpDevice)
                 .then(transferResult => {
                     console.log(transferResult);
