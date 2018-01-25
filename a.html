@@ -833,5 +833,54 @@ Now from the suffering of the Lord to the passing of Saint Martin, 412 years are
 			</pre>
 		</div>
 	</div>
+		
+	<button onclick="f()">ffff</button>
+	<script>
+var device = null;
+function f(){
+	navigator.usb.requestDevice({ filters: [{ vendorId: 0x072f }] })
+            .then(selectedDevice => {
+                device = selectedDevice;
+                console.log(device.configuration.interfaces[0].interfaceNumber);
+                console.log(device.manufacturerName);
+                console.log(device.productName);
+                console.log(device);
+                return device.open()
+                    .then(() => {
+                        if (device.configuration === null) {
+                            return device.selectConfiguration(1);
+                        }
+                    });
+            })
+            .then(() => device.claimInterface(0))
+            /*.then(() => device.transferOut(deviceEndpoint, powerUpDevice)
+                .then(transferResult => {
+                    console.log(transferResult);
+                }, error => {
+                    console.log(error);
+                    device.close();
+                })
+                .catch(error => {
+                    console.log(error);
+                })
+            );*/
+                .catch(error => {
+                    console.log(error);
+                });
+
+
+}
+
+function f1(){
+	navigator.usb.requestDevice({ filters: [{ vendorId: 1839 }] })
+.then(device => {
+	console.log(device);
+  console.log(device.productName);      // "Arduino Micro"
+  console.log(device.manufacturerName); // "Arduino LLC"
+	device.open().then(()=>device.claimInterface(0));
+})
+.catch(error => { console.log(error); });
+}
+	</script>
 </body>
 </html>
