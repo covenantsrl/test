@@ -119,11 +119,9 @@ $('body').keydown((e)=>{
 				}
 			}
 				
-			/*if (deltaX[0] != 0 && deltaX[1] != 0){
-				chart.state.scroll_pixel_offset = -deltaX[0]*2;
-				_draw = true;
-			}*/
-			if (deltaY[0] != 0 && deltaY[1] != 0){
+			if (ongoingTouches.length === 1){
+				console.log(1, deltaX[0], deltaY[0]);
+			} else if (deltaY[0] != 0 && deltaY[1] != 0){
 				//chart.state.pinch_pixel_offset = -deltaY[0]*3;
 				console.log(deltaY[0]);
 			}
