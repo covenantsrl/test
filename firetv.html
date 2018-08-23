@@ -23,6 +23,7 @@
             	console.log("onclose");
             };
 */
+var ws = {};
 var w = $('body').width();
 var h = $('body').height();
 console.log(w, h);
@@ -76,7 +77,7 @@ $('body').keydown((e)=>{
 });
 
 
-	if (false && 'ontouchstart' in document.documentElement){
+	if ('ontouchstart' in document.documentElement){
 		// https://developer.mozilla.org/en-US/docs/Web/API/Touch_events
 		var ongoingTouches = [];
 		function ongoingTouchIndexById(idToFind) {
@@ -101,7 +102,7 @@ $('body').keydown((e)=>{
 			}
 		}
 		function handleMove(evt) {
-			if (ongoingTouches.length > 1)
+			if (ongoingTouches.length > 0)
 				evt.preventDefault();
 			var touches = evt.changedTouches;
 			//console.log("touchmove");
