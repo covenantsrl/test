@@ -1,0 +1,159 @@
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<style>
+</style>
+<body>
+</body>
+<script type="text/javascript">
+ var ws = new WebSocket("ws://127.0.0.1:8887/");
+ //var ws = new WebSocket("ws://192.168.1.65:8887/");
+            ws.onopen = function () {
+            	console.log("onopen");
+                //ws.send("Hello World");
+            };
+
+            ws.onmessage = function (evt) {
+            	console.log("onmessage");
+                var received_msg = evt.data;
+            };
+            ws.onclose = function () {
+            	console.log("onclose");
+            };
+
+var w = $('body').width();
+var h = $('body').height();
+
+$('body').mousemove((e)=>{
+    //console.log(""+e.offsetX/w, ""+e.offsetY/h);
+    //ws.send(""+e.originalEvent.movementX+","+e.originalEvent.movementY);
+    if (ws.readyState === 1)
+        ws.send(""+e.offsetX/w+","+e.offsetY/h);
+});
+$('body').click((e)=>{
+    ws.send("t");
+});
+
+document.body.addEventListener('mousewheel',function(e){
+    //console.log(e.wheelDeltaY);
+    if (ws.readyState === 1)
+        ws.send("s"+(e.wheelDeltaY*-1));
+    e.stopPropagation();
+    e.preventDefault();
+    e.cancelBubble = false;
+    return false;
+}, false);
+
+$('body').keypress((e)=>{
+    console.log(e);
+    if (ws.readyState === 1)
+        ws.send("k"+(e.originalEvent.charCode-68)+(e.shiftKey?1000:0));
+});
+$('body').keydown((e)=>{
+    console.log(e);
+    
+    var code = -1;
+    if (e.keyCode == 37)//left
+        code = 21;
+    else if (e.keyCode == 38)//up
+        code = 19;
+    else if (e.keyCode == 39)//right
+        code = 22;
+    else if (e.keyCode == 40)//down
+        code = 20;
+    else if (e.keyCode == 13)//enter
+        code = 66;
+    else if (e.keyCode == 8)//up
+        code = 67;
+    if (code == -1)
+        return;
+    if (ws.readyState === 1)
+        ws.send("k"+code);
+});
+
+
+	if ('ontouchstart' in document.documentElement){
+		// https://developer.mozilla.org/en-US/docs/Web/API/Touch_events
+		var ongoingTouches = [];
+		function ongoingTouchIndexById(idToFind) {
+			for (var i = 0; i < ongoingTouches.length; i++) {
+				var id = ongoingTouches[i].identifier;
+				if (id == idToFind) {
+					return i;
+				}
+			}
+			return -1;
+		}
+		function copyTouch(touch) {
+			return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
+		}
+		function handleStart(evt) {
+			//evt.preventDefault();
+			//console.log("touchstart.");
+			var touches = evt.changedTouches;  
+			for (var i = 0; i < touches.length; i++) {
+				//console.log("touchstart:" + touches[i].identifier);
+				ongoingTouches.push(copyTouch(touches[i]));
+			}
+		}
+		function handleMove(evt) {
+			if (ongoingTouches.length > 1)
+				evt.preventDefault();
+			var touches = evt.changedTouches;
+			//console.log("touchmove");
+			var deltaX=[0,0];
+			var deltaY=[0,0];
+			for (var i = 0; i < touches.length; i++) {
+				var idx = ongoingTouchIndexById(touches[i].identifier);
+				if (idx >= 0) {
+					//console.log("continuing touch "+touches[i].identifier);
+					deltaX[i] = ongoingTouches[idx].pageX - touches[i].pageX;
+					deltaY[i] = ongoingTouches[idx].pageY - touches[i].pageY;
+					ongoingTouches.splice(idx, 1, copyTouch(touches[i])); //swap in the new touch record
+				} else {
+					//console.log("can't figure out which touch to continue");
+				}
+			}
+				
+			/*if (deltaX[0] != 0 && deltaX[1] != 0){
+				chart.state.scroll_pixel_offset = -deltaX[0]*2;
+				_draw = true;
+			}
+			if (deltaY[0] != 0 && deltaY[1] != 0){
+				chart.state.pinch_pixel_offset = -deltaY[0]*3;
+				_draw = true;
+			}*/
+		}
+		function handleEnd(evt) {
+			//evt.preventDefault();
+			//console.log("touchend");
+			var touches = evt.changedTouches;
+			for (var i = 0; i < touches.length; i++) {
+				var idx = ongoingTouchIndexById(touches[i].identifier);
+				if (idx >= 0) {
+					//console.log("ending touch "+touches[i].identifier);
+					ongoingTouches.splice(idx, 1);  // remove it; we're done
+				} else {
+					//console.log("can't figure out which touch to end");
+				}
+			}
+		}
+		function handleCancel(evt) {
+			//evt.preventDefault();
+			//console.log("touchcancel.");
+			var touches = evt.changedTouches;
+			for (var i = 0; i < touches.length; i++) {
+				var idx = ongoingTouchIndexById(touches[i].identifier);
+				ongoingTouches.splice(idx, 1);  // remove it; we're done
+			}
+		}
+		document.body.addEventListener("touchstart", handleStart, false);
+		document.body.addEventListener("touchend", handleEnd, false);
+		document.body.addEventListener("touchcancel", handleCancel, false);
+		document.body.addEventListener("touchmove", handleMove, false);
+	}
+
+</script>
+</html>
+
+
