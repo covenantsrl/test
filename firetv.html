@@ -150,10 +150,10 @@ $('body').keydown((e)=>{
 				ongoingTouches.splice(idx, 1);  // remove it; we're done
 			}
 		}
-		document.body.addEventListener("touchstart", handleStart, false);
-		document.body.addEventListener("touchend", handleEnd, false);
-		document.body.addEventListener("touchcancel", handleCancel, false);
-		document.body.addEventListener("touchmove", handleMove, false);
+		$('div')[0].addEventListener("touchstart", handleStart, false);
+		$('div')[0].addEventListener("touchend", handleEnd, false);
+		$('div')[0].addEventListener("touchcancel", handleCancel, false);
+		$('div')[0].addEventListener("touchmove", handleMove, false);
 	}
 
 </script>
