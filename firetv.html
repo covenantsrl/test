@@ -32,12 +32,12 @@ $('body').mousemove((e)=>{
     if (ws.readyState === 1)
         ws.send(""+e.offsetX/w+","+e.offsetY/h);
 });
-$(document).on('click touchend', (e)=>{
+$(document).on('click tap', (e)=>{
 	console.log('ooo');
-	if (e.type == "click"){
+	//if (e.type == "click"){
 	console.log("tap");
     ws.send("t");
-	}
+	//}
 });
 
 document.body.addEventListener('mousewheel',function(e){
