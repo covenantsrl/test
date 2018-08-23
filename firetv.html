@@ -8,7 +8,7 @@
 <script type="text/javascript">
  //var ws = new WebSocket("ws://127.0.0.1:8887/");
  //var ws = new WebSocket("ws://192.168.1.65:8887/");
- var ws = new WebSocket("ws://192.168.1.83:8887/");
+ /*var ws = new WebSocket("ws://192.168.1.83:8887/");
             ws.onopen = function () {
             	console.log("onopen");
                 //ws.send("Hello World");
@@ -21,9 +21,10 @@
             ws.onclose = function () {
             	console.log("onclose");
             };
-
+*/
 var w = $('body').width();
 var h = $('body').height();
+console.log(w, h);
 
 $('body').mousemove((e)=>{
     //console.log(""+e.offsetX/w, ""+e.offsetY/h);
