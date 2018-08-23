@@ -6,8 +6,9 @@
 <body>
 </body>
 <script type="text/javascript">
- var ws = new WebSocket("ws://127.0.0.1:8887/");
+ //var ws = new WebSocket("ws://127.0.0.1:8887/");
  //var ws = new WebSocket("ws://192.168.1.65:8887/");
+ var ws = new WebSocket("ws://192.168.1.83:8887/");
             ws.onopen = function () {
             	console.log("onopen");
                 //ws.send("Hello World");
@@ -118,11 +119,11 @@ $('body').keydown((e)=>{
 			/*if (deltaX[0] != 0 && deltaX[1] != 0){
 				chart.state.scroll_pixel_offset = -deltaX[0]*2;
 				_draw = true;
-			}
-			if (deltaY[0] != 0 && deltaY[1] != 0){
-				chart.state.pinch_pixel_offset = -deltaY[0]*3;
-				_draw = true;
 			}*/
+			if (deltaY[0] != 0 && deltaY[1] != 0){
+				//chart.state.pinch_pixel_offset = -deltaY[0]*3;
+				console.log(deltaY[0]);
+			}
 		}
 		function handleEnd(evt) {
 			//evt.preventDefault();
