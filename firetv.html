@@ -32,8 +32,8 @@ $('body').mousemove((e)=>{
     if (ws.readyState === 1)
         ws.send(""+e.offsetX/w+","+e.offsetY/h);
 });
-$(document).on('click touch', (e)=>{
-	console.log('ooo');
+$(document).on('click touchend', (e)=>{
+	console.log(e);
 	//if (e.type == "click"){
 	console.log("tap");
     ws.send("t");
