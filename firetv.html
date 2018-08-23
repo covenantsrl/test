@@ -38,7 +38,7 @@ $('div').on('click', (e)=>{
     ws.send("t");
 });
 
-document.body.addEventListener('mousewheel',function(e){
+$('div')[0].addEventListener('mousewheel',function(e){
     console.log("wheel", e.wheelDeltaY);
     if (ws.readyState === 1)
         ws.send("s"+(e.wheelDeltaY*-1));
@@ -76,7 +76,7 @@ $('body').keydown((e)=>{
 });
 
 
-	if ('ontouchstart' in document.documentElement){
+	if (false && 'ontouchstart' in document.documentElement){
 		// https://developer.mozilla.org/en-US/docs/Web/API/Touch_events
 		var ongoingTouches = [];
 		function ongoingTouchIndexById(idToFind) {
