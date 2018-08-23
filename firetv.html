@@ -32,7 +32,7 @@ $('body').mousemove((e)=>{
     if (ws.readyState === 1)
         ws.send(""+e.offsetX/w+","+e.offsetY/h);
 });
-$(document).on('click tap', (e)=>{
+$(document).on('click touch', (e)=>{
 	console.log('ooo');
 	//if (e.type == "click"){
 	console.log("tap");
