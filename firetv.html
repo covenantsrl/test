@@ -4,6 +4,7 @@
 <style>
 </style>
 <body style="background-color:gray">
+	<div style="width:100%;height:100%;background-color:yellow"></div>
 </body>
 <script type="text/javascript">
  //var ws = new WebSocket("ws://127.0.0.1:8887/");
@@ -32,7 +33,7 @@ $('body').mousemove((e)=>{
     if (ws.readyState === 1)
         ws.send(""+e.offsetX/w+","+e.offsetY/h);
 });
-$(document).on('click touchend', (e)=>{
+$('div').on('click', (e)=>{
 	console.log(e);
 	//if (e.type == "click"){
 	console.log("tap");
