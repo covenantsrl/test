@@ -387,7 +387,7 @@ function spatiebotInitializer() {
         var orgRender = Graphics.render;
         Graphics.render = function () {
             //if (!limitUpdates || document.hasFocus()) {
-			if (true){
+			if (false){
                 orgRender.apply(null, arguments);
             }
         };
