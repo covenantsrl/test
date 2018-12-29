@@ -4,12 +4,20 @@
 <style>
 </style>
 <body style="background-color:gray">
+	<input type="text" style="margin-top:20px">
+	<input type="text" id="url" style="">
+	<button id="back">back</button>
+	<button id="zoomin">+</button>
+	<button id="zoomout">-</button>
 	<div style="width:100%;height:100%;background-color:yellow"></div>
+	<div id="a" style="background-color:red;width:10px;height:10px;position:fixed;top:0;left:0"></div>
+	<!--<div id="b" style="overflow-x:scroll;overflow-y:scroll;height:50%;width:50%;-webkit-overflow-scrolling: touch">-->
+		<!--<div style="background-color:yellow;width:5000px;height:5000px"></div>-->
+	<!--</div>-->
 </body>
 <script type="text/javascript">
  //var ws = new WebSocket("ws://127.0.0.1:8887/");
- //var ws = new WebSocket("ws://192.168.1.65:8887/");
- /*var ws = new WebSocket("ws://192.168.1.83:8887/");
+ var ws = new WebSocket("ws://192.168.1.65:8887/");
             ws.onopen = function () {
             	console.log("onopen");
                 //ws.send("Hello World");
@@ -22,41 +30,90 @@
             ws.onclose = function () {
             	console.log("onclose");
             };
-*/
-var ws = {};
+
 var w = $('body').width();
 var h = $('body').height();
 console.log(w, h);
 
-$('body').mousemove((e)=>{
-    //console.log(""+e.offsetX/w, ""+e.offsetY/h);
-    //ws.send(""+e.originalEvent.movementX+","+e.originalEvent.movementY);
-    if (ws.readyState === 1)
-        ws.send(""+e.offsetX/w+","+e.offsetY/h);
-});
+$a = $('#a');
+
 $('div').on('click', (e)=>{
 	console.log("tap");
-    ws.send("t");
+	ws.send("t");
 });
 
-$('div')[0].addEventListener('mousewheel',function(e){
-    console.log("wheel", e.wheelDeltaY);
-    if (ws.readyState === 1)
-        ws.send("s"+(e.wheelDeltaY*-1));
-    e.stopPropagation();
-    e.preventDefault();
-    e.cancelBubble = false;
-    return false;
-}, false);
+$('#back').on('click', (e)=>{
+	console.log("back");
+	ws.send("b");
+});
+$('#zoomin').on('click', (e)=>{
+	console.log("zoomin");
+	ws.send("z");
+});
+$('#zoomout').on('click', (e)=>{
+	console.log("zoomout");
+	ws.send("Z");
+});
+
+if (false || !('ontouchstart' in document.documentElement)){
+	/*$b = $('#b');
+	$b[0].scrollTop = 2500;
+	$b[0].scrollLeft = 2500;
+	var btop = 0, bleft = 0;
+	$b.scroll(function(e){
+	//setInterval(()=>{
+		let top = $b.scrollTop();
+		let left = $b.scrollLeft();
+		let deltaX = left - bleft;
+		let deltaY = top - btop;
+		if (!deltaX && ! deltaY)
+			return;
+		btop = top;
+		bleft = left;
+		//console.log(deltaX, deltaY);
+			ws.send("0,"+(-deltaX)+","+(-deltaY));
+	//}, 10);
+	});*/
+	$('body').mousemove((e)=>{
+		//console.log(""+e.offsetX/w, ""+e.offsetY/h);
+		//ws.send(""+e.originalEvent.movementX+","+e.originalEvent.movementY);
+		if (ws.readyState === 1)
+			ws.send("1,"+e.offsetX/w+","+e.offsetY/h);
+	});
+
+	$('div')[0].addEventListener('mousewheel',function(e){
+		//console.log("wheel", e.wheelDeltaY);
+		if (ws.readyState === 1)
+			ws.send("s"+(e.wheelDeltaY*-1));
+		e.stopPropagation();
+		e.preventDefault();
+		e.cancelBubble = false;
+		return false;
+	}, false);
+}
 
 $('body').keypress((e)=>{
-    console.log(e);
+    //console.log(e.originalEvent.charCode);
+	
+	if (e.target.id == 'url')
+		return;
+	
+	e.preventDefault();
+	
+	let code = e.originalEvent.charCode-68+(e.shiftKey?1000:0);
+	if (code < 0)
+		return;
+
+	console.log("k"+code);
     if (ws.readyState === 1)
-        ws.send("k"+(e.originalEvent.charCode-68)+(e.shiftKey?1000:0));
+        ws.send("k"+code);
 });
 $('body').keydown((e)=>{
-    console.log(e);
-    
+    //console.log(e);
+	
+	//var tag = e.target.tagName.toLowerCase();
+	//if (tag == 'input' || tag == 'textarea' || tag == 'select')
+	
     var code = -1;
     if (e.keyCode == 37)//left
         code = 21;
@@ -72,12 +129,25 @@ $('body').keydown((e)=>{
         code = 67;
     if (code == -1)
         return;
-    if (ws.readyState === 1)
+	
+	if (e.target.id == 'url'){
+		if (e.keyCode == 13){
+			let url = e.target.value;
+			if (url.indexOf("http") !== 0)
+				url = "http://"+url;
+			ws.send(url);
+		}
+		return;
+	}
+    
+	console.log("k"+code);
+	if (ws.readyState === 1)
         ws.send("k"+code);
 });
 
 
-	if ('ontouchstart' in document.documentElement){
+	if (true && 'ontouchstart' in document.documentElement){
+		let start_i = 0;
 		// https://developer.mozilla.org/en-US/docs/Web/API/Touch_events
 		var ongoingTouches = [];
 		function ongoingTouchIndexById(idToFind) {
@@ -93,6 +163,9 @@ $('body').keydown((e)=>{
 			return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
 		}
 		function handleStart(evt) {
+				//evt.preventDefault();
+			start_i = 0;
+			//console.log("-------");
 			//evt.preventDefault();
 			//console.log("touchstart.");
 			var touches = evt.changedTouches;  
@@ -121,10 +194,26 @@ $('body').keydown((e)=>{
 			}
 				
 			if (ongoingTouches.length === 1){
-				console.log(1, deltaX[0], deltaY[0]);
+				start_i++;
+				//console.log(""+ongoingTouches[0].pageX/w+","+ongoingTouches[0].pageY/h);
+				//console.log("0,"+deltaX[0]+","+deltaY[0]);
+				if ((deltaX[0]||deltaY[0]) /*&& ws.readyState === 1*/){
+					//let cap = new Date() - start_time < 500 ? 8 : 20;
+					//let cap = start_i < 40 ? start_i : 40;
+					let cap = 40;
+					let x = (deltaX[0] > 0 ? Math.min(cap, deltaX[0]) : Math.max(-cap, deltaX[0]));
+					let y = (deltaY[0] > 0 ? Math.min(cap, deltaY[0]) : Math.max(-cap, deltaY[0]));
+					ws.send("0,"+(x*-2)+","+(y*-2));
+					//$a.css('left',parseInt($a.css('left').replace('px',''))+(x*-3)+'px');
+					//$a.css('top', parseInt($a.css('top').replace('px',''))+(y*-3)+'px');
+	
+					//ws.send(""+ongoingTouches[0].pageX/w+","+ongoingTouches[0].pageY/h);
+				}
 			} else if (deltaY[0] != 0 && deltaY[1] != 0){
 				//chart.state.pinch_pixel_offset = -deltaY[0]*3;
-				console.log(deltaY[0]);
+				//console.log("s"+(deltaY[0]));
+				if (ws.readyState === 1)
+					ws.send("s"+(deltaY[0]));
 			}
 		}
 		function handleEnd(evt) {
