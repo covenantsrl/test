@@ -386,7 +386,8 @@ function spatiebotInitializer() {
         // suspend the raw game rendering if the window doesn't have focus
         var orgRender = Graphics.render;
         Graphics.render = function () {
-            if (!limitUpdates || document.hasFocus()) {
+            //if (!limitUpdates || document.hasFocus()) {
+			if (true){
                 orgRender.apply(null, arguments);
             }
         };
