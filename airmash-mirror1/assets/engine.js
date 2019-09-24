@@ -32349,7 +32349,7 @@ function() {
     }
     ;
     var w = function(e, t) {
-        var n = "/games";
+        var n = "games";//*mod
         t && (n += "?main=1"),
         $.ajax({
             url: n,
